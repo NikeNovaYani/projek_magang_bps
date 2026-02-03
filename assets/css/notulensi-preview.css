@@ -1,0 +1,64 @@
+:root {
+    --bg: #f4f7fb;
+    --card: #ffffff;
+    --text: #0f172a;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --shadow: 0 10px 30px rgba(15, 23, 42, .08);
+    --radius: 14px;
+}
+
+body {
+    margin: 0;
+    padding: 20px;
+    background: var(--bg);
+    font-family: Arial, sans-serif;
+    color: var(--text);
+}
+
+.card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--line);
+    overflow: hidden;
+    max-width: 900px;
+    margin: auto;
+}
+
+.card-body {
+    padding: 14px;
+}
+
+.paper {
+    background: #fff;
+    padding: 14px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+td {
+    border: 1px solid #000;
+    padding: 6px 10px;
+    font-size: 11pt;
+    vertical-align: top;
+    line-height: 1.35;
+}
+
+.label-cell {
+    width: 130px;
+}
+
+.preview-box {
+    border: 1px solid #000;
+    padding: 10px;
+    border-top: none;
+    font-size: 11pt;
+}
+
+.spacer {
+    height: 12px;
+}

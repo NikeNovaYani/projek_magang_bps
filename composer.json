@@ -1,0 +1,18 @@
+{
+    "name": "rapat/notulensi",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "Rapat\\Notulensi\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "bpsdepok"
+        }
+    ],
+    "require": {
+        "mpdf/mpdf": "^7.1",
+        "psr/log": "^1.0"
+    }
+}
