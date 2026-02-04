@@ -88,13 +88,54 @@ function e($v) {
         </div>
 
         <div style="margin-top:20px; text-align:right;">
-            <a href="index.php?page=generate_notulensi" target="_blank">
-                <button>Cetak PDF</button>
-            </a>
+            <button class="btn-cetak" onclick="cetakPDF(this)">Cetak & Simpan PDF</button>
         </div>
 
     </div>
 </div>
+
+<script>
+function cetakPDF(btn) {
+    const originalText = btn.innerText;
+    btn.innerText = 'Menyimpan ke Arsip...';
+    btn.disabled = true;
+
+    // 1. Trigger Archive
+    fetch('pages/save_notulensi.php?action=archive')
+        .then(response => response.text())
+        .then(result => {
+             const folderName = result.trim();
+             // Simple validation: check if result is likely a folder name (contains underscore or date)
+             // or just ensure it's not empty and doesn't contain error markup
+             if (folderName && !folderName.includes('<br') && !folderName.includes('Fatal error')) {
+                 
+                 // 2. Silent Download + Save PDF
+                 const iframe = document.createElement('iframe');
+                 iframe.style.display = 'none';
+                 iframe.src = 'pdf/generate_notulensi.php?download=true&archive_folder=' + encodeURIComponent(folderName);
+                 document.body.appendChild(iframe);
+
+                 setTimeout(() => {
+                     alert('Notulensi berhasil diarsipkan dan PDF diunduh!');
+                     btn.innerText = originalText;
+                     btn.disabled = false;
+                 }, 1500);
+
+             } else {
+                 alert('Gagal mengarsipkan: ' + result);
+                 console.error(result);
+                 btn.innerText = originalText;
+                 btn.disabled = false;
+             }
+        })
+        .catch(err => {
+            alert('Terjadi kesalahan koneksi.');
+            console.error(err);
+            btn.innerText = originalText;
+            btn.disabled = false;
+        });
+}
+</script>
 
 </body>
 </html>

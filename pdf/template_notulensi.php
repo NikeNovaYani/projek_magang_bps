@@ -32,17 +32,38 @@ $data['agenda'] = '
 ';
 
 /* ================= ISI RESUME (WAJIB MASUK SINI) ================= */
+/* ================= ISI RESUME (WAJIB MASUK SINI) ================= */
+// Helper to force inline style for PDF compatibility
+function fixIndent($html) {
+    if (!$html) return '';
+    // Replace class="... first-line-indent ..." with hard spaces
+    // CSS text-indent is unreliable in some PDF engines in this context
+    return preg_replace_callback(
+        '/<p([^>]*class=["\'][^"\']*first-line-indent[^"\']*["\'][^>]*)>/i',
+        function ($matches) {
+            $tag = $matches[0];
+            // Inject 10 non-breaking spaces for visual indentation
+            return $tag . str_repeat('&nbsp;', 10);
+        },
+        $html
+    );
+}
+
+$pembukaan = fixIndent($data['pembukaan'] ?? '');
+$pembahasan = fixIndent($data['pembahasan'] ?? '');
+
 $isi = '
 <p class="section-title"><strong>Pembukaan</strong></p>
-' . ($data['pembukaan'] ?? '') . '
+' . $pembukaan . '
 
+<p>&nbsp;</p>
 <p class="section-title"><strong>Pembahasan dan Diskusi</strong></p>
-' . ($data['pembahasan'] ?? '') . '
+' . $pembahasan . '
 ';
 
 /* ================= ISI KESIMPULAN (TERPISAH DARI RESUME) ================= */
 $kesimpulan_label = '<strong>Kesimpulan / Tindak Lanjut</strong>';
-$kesimpulan = $data['kesimpulan'] ?? '';
+$kesimpulan = fixIndent($data['kesimpulan'] ?? '');
 ?>
 
 <style>
@@ -71,7 +92,7 @@ $kesimpulan = $data['kesimpulan'] ?? '';
         border: 1px solid #000;
         padding: 6px 10px;
         vertical-align: top;
-        line-height: 1.35;
+        line-height: 1.40;
         word-wrap: break-word;
     }
 
@@ -124,6 +145,7 @@ $kesimpulan = $data['kesimpulan'] ?? '';
     /* JUDUL SECTION */
     .section-title {
         margin-top: 12px;
+        margin-bottom: 20px;
         page-break-after: avoid;
         font-weight: bold;
     }
@@ -138,6 +160,24 @@ $kesimpulan = $data['kesimpulan'] ?? '';
     .identitas-table td {
         text-align: left;
         vertical-align: middle;
+    }
+
+    /* KESIMPULAN LIST */
+    .resume-table ul, .resume-table ol {
+        margin: 0;
+        padding-left: 20px;
+    }
+    .resume-table li {
+        text-align: justify;
+        margin-bottom: 5px;
+    }
+    .resume-table li::marker {
+        font-weight: bold;
+    }
+
+    p.first-line-indent, .first-line-indent {
+        text-indent: 40px !important;
+        margin-left: 0 !important; /* Ensure no margin overrides it */
     }
 </style>
 
@@ -175,8 +215,8 @@ $kesimpulan = $data['kesimpulan'] ?? '';
 
 <?php
 /* ================= PEMECAHAN HALAMAN ================= */
-$limitFirst  = 900;
-$limitNext   = 2500;
+$limitFirst  = 980;
+$limitNext   = 2400;
 
 $pages = [];
 $current = '';
@@ -274,3 +314,57 @@ $p_notulis = $data['p_notulis'] ?? 'Nurine Kristy';
         </td>
     </tr>
 </table>
+
+<!-- ================= DOKUMENTASI (MULTI PAGE) ================= -->
+<?php if (!empty($data['dokumentasi'])): ?>
+    <?php 
+        // Chunk images -> 2 per page
+        $chunks = array_chunk($data['dokumentasi'], 2);
+        $docPage = 1;
+    ?>
+
+    <?php foreach ($chunks as $chunk): ?>
+        <div class="page-break"></div>
+        <h3 style="text-align: center; margin-bottom: 20px;">DOKUMENTASI <?= count($chunks) > 1 && $docPage > 1 ? '(Lanjutan)' : '' ?></h3>
+        
+        <div style="text-align: center;">
+            <?php foreach ($chunk as $docPath): ?>
+                <?php 
+                    $fullPath = __DIR__ . '/../' . $docPath;
+                    if (file_exists($fullPath)): 
+                ?>
+                    <div style="margin-bottom: 30px;">
+                        <img src="<?= $docPath ?>" style="max-width: 100%; max-height: 100mm;">
+                    </div>
+                <?php endif; ?>
+            <?php endforeach; ?>
+        </div>
+        <?php $docPage++; ?>
+    <?php endforeach; ?>
+<?php endif; ?>
+
+<!-- ================= DAFTAR HADIR (ABSENSI) ================= -->
+<?php if (!empty($data['absensi'])): ?>
+    <?php 
+        // 1 Image per page for Absensi (assuming landscape/large)
+        $docPage = 1;
+    ?>
+
+    <?php foreach ($data['absensi'] as $absPath): ?>
+        <div class="page-break"></div>
+        <h3 style="text-align: center; margin-bottom: 20px;">DAFTAR HADIR <?= count($data['absensi']) > 1 && $docPage > 1 ? '(Lanjutan)' : '' ?></h3>
+        
+        <div style="text-align: center;">
+            <?php 
+                $fullPath = __DIR__ . '/../' . $absPath;
+                if (file_exists($fullPath)): 
+            ?>
+                <div style="margin-bottom: 30px;">
+                    <!-- Use max-height ~150mm to fit landscape A4 comfortably within margins -->
+                    <img src="<?= $absPath ?>" style="max-width: 100%; max-height: 150mm;">
+                </div>
+            <?php endif; ?>
+        </div>
+        <?php $docPage++; ?>
+    <?php endforeach; ?>
+<?php endif; ?>

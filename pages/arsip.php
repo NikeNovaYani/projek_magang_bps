@@ -259,7 +259,7 @@ $folders = get_folders($arsip_dir);
 
         /* CARD STYLE (White Box with Shadow) */
         .card-panel {
-            width: 50%;
+            width: 100%;
             background: white;
             padding: 25px;
             border-radius: 12px;
@@ -270,7 +270,7 @@ $folders = get_folders($arsip_dir);
         .card-head h3 {
             margin-top: 0;
             color: #1976d2;
-            font-size: 18px;
+            font-size: 20px;
             border-bottom: 2px solid #e3f2fd;
             padding-bottom: 10px;
             margin-bottom: 20px;
@@ -531,7 +531,7 @@ $folders = get_folders($arsip_dir);
             <!-- CARD BUAT ARSIP -->
             <div class="card-panel">
                 <div class="card-head">
-                    <h3><i class="fas fa-plus-circle"></i> Buat Arsip Baru</h3>
+                    <h3>Buat Arsip Baru</h3>
                 </div>
                 
                 <form method="post" enctype="multipart/form-data">
@@ -590,12 +590,16 @@ $folders = get_folders($arsip_dir);
                     $has_undangan = has_files($path . 'undangan');
                     $has_notulensi = has_files($path . 'notulensi');
                     $has_absensi = has_files($path . 'absensi');
+                    
+                    // Check for JSON Data
+                    $json_undangan = file_exists($path . 'undangan.json');
                     ?>
                     
                     <div class="archive-card">
                         <div class="ac-header">
                             <i class="fas fa-folder ac-icon"></i>
                             <div class="ac-actions">
+                                <!-- Edit button moved to view_folder.php -->
                                 <button class="edit-btn" onclick="toggleEdit('<?= $folder ?>')"><i class="fas fa-pen"></i></button>
                                 <button onclick="if(confirm('Hapus arsip ini?')) document.getElementById('del-<?= $folder ?>').submit()"><i class="fas fa-trash"></i></button>
                             </div>

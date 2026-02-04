@@ -1,16 +1,41 @@
 <?php
+/* ================= LOAD FROM ARCHIVE ================= */
+if (isset($_GET['load'])) {
+    $folder = preg_replace('/[^A-Za-z0-9\-_]/', '_', $_GET['load']);
+    $jsonPath = 'arsip/' . $folder . '/undangan.json';
+    
+    if (file_exists($jsonPath)) {
+        $loaded = json_decode(file_get_contents($jsonPath), true);
+        if ($loaded) {
+        if ($loaded) {
+            $nomor    = $loaded['nomor'] ?? null;
+            $sifat    = $loaded['sifat'] ?? null;
+            $lampiran = $loaded['lampiran'] ?? null;
+            $hal      = $loaded['hal'] ?? null;
+            $tglsurat = $loaded['tanggal'] ?? null; // 'tanggal' in JSON maps to 'tglsurat' var
+            $kepada   = $loaded['kepada'] ?? null;
+            // Note: 'isi' might not be saved in current save_undangan.php logic, check later if needed.
+            $hari     = $loaded['hari_tanggal'] ?? null;
+            $waktu    = $loaded['pukul_mulai'] ?? null;
+            $tempat   = $loaded['tempat'] ?? null;
+            $agenda   = $loaded['agenda'] ?? null;
+        }
+        }
+    }
+}
+
 /* ================= DATA DEFAULT ================= */
-$nomor    = $_POST['f_nomor']    ?? 'B-32766/32766/BPS/2024';
-$sifat    = $_POST['f_sifat']    ?? 'Biasa';
-$lampiran = $_POST['f_lampiran'] ?? '-';
-$hal      = $_POST['f_hal']      ?? 'Undangan Pembahasan Optimalisasi Anggaran Perjadin 2025';
-$tglsurat = $_POST['f_tglsurat'] ?? date('Y-m-d');
-$kepada   = $_POST['f_kepada']   ?? "1. Seluruh Ketua Tim BPS Kota Depok\n2. PPK BPS Kota Depok";
-$isi      = $_POST['f_isi']      ?? 'Sehubungan dengan menjelang akan berakhirnya tahun anggaran 2025, Kepala BPS Kota Depok mengundang seluruh Ketua Tim dan PPK BPS Kota Depok untuk hadir dalam rapat yang akan diselenggarakan pada';
-$hari     = $_POST['f_hari']     ?? '2024-11-11';
-$waktu    = $_POST['f_waktu']    ?? '13:30';
-$tempat   = $_POST['f_tempat']   ?? 'Ruang Rapat BPS Kota Depok';
-$agenda   = $_POST['f_agenda']   ?? 'Pembahasan Optimalisasi Anggaran';
+$nomor    = $_POST['f_nomor']    ?? ($nomor ?? 'B-32766/32766/BPS/2024');
+$sifat    = $_POST['f_sifat']    ?? ($sifat ?? 'Biasa');
+$lampiran = $_POST['f_lampiran'] ?? ($lampiran ?? '-');
+$hal      = $_POST['f_hal']      ?? ($hal ?? 'Undangan Pembahasan Optimalisasi Anggaran Perjadin 2025');
+$tglsurat = $_POST['f_tglsurat'] ?? ($tglsurat ?? date('Y-m-d'));
+$kepada   = $_POST['f_kepada']   ?? ($kepada ?? "1. Seluruh Ketua Tim BPS Kota Depok\n2. PPK BPS Kota Depok");
+$isi      = $_POST['f_isi']      ?? ($isi ?? 'Sehubungan dengan menjelang akan berakhirnya tahun anggaran 2025, Kepala BPS Kota Depok mengundang seluruh Ketua Tim dan PPK BPS Kota Depok untuk hadir dalam rapat yang akan diselenggarakan pada');
+$hari     = $_POST['f_hari']     ?? ($hari ?? '2024-11-11');
+$waktu    = $_POST['f_waktu']    ?? ($waktu ?? '13:30');
+$tempat   = $_POST['f_tempat']   ?? ($tempat ?? 'Ruang Rapat BPS Kota Depok');
+$agenda   = $_POST['f_agenda']   ?? ($agenda ?? 'Pembahasan Optimalisasi Anggaran');
 
 /* ================= FUNGSI FORMATTING ================= */
 function formatTanggal($date)
@@ -578,14 +603,6 @@ function formatWaktu($w)
 
 
     <script>
-        function submitCetak() {
-            alert("Kode BARU sedang berjalan!"); // <--- Tambahkan baris ini
-
-            // ... sisa kode fetch/ajax di bawahnya ...
-            const form = document.getElementById('formUndangan');
-            // ... dst ...
-        }
-
         const form = document.getElementById('formUndangan');
 
         function submitNormal() {
@@ -595,33 +612,52 @@ function formatWaktu($w)
         }
 
         function submitCetak() {
-            // Ambil elemen form
-            const form = document.getElementById('formUndangan');
             const data = new FormData(form);
 
-            // 1. Kirim data ke save_undangan.php via AJAX
-            fetch('pages/save_undangan.php', {
+            // Change button text to indicate loading
+            const btn = document.querySelector('.btn-print');
+            const originalText = btn.innerText;
+            btn.innerText = 'Menyimpan & Mengunduh...';
+            btn.disabled = true;
+
+            // 1. Kirim data ke save_undangan.php?action=archive via AJAX
+            fetch('pages/save_undangan.php?action=archive', {
                     method: 'POST',
                     body: data
                 })
                 .then(response => response.text())
                 .then(result => {
-                    // Cek respon dari PHP (kita tadi set echo 'OK')
-                    if (result.trim() === 'OK') {
-
-                        // 2. Jika penyimpanan sukses, buka Tab Baru untuk cetak PDF
-                        // Pastikan nama filenya sesuai dengan file mesin mPDF kamu
-                        // (apakah generate_undangan.php atau printundangan.php?)
-                        window.open('pdf/generate_undangan.php', '_blank');
+                    // Jika sukses, result akan berisi Nama Folder (misal: 2024-02-04_Kegiatan)
+                    // Kita anggap sukses jika tidak kosong dan tidak ada error PHP fatal (bisa divalidasi lebih lanjut)
+                    const folderName = result.trim();
+                    
+                    if (folderName && !folderName.includes('<br') && !folderName.includes('Error')) {
+                        // 2. Sukses Simpan -> Trigger Download Silent via Iframe + Auto Save to Archive folder
+                        const iframe = document.createElement('iframe');
+                        iframe.style.display = 'none';
+                        // Pass folder name to generator
+                        iframe.src = 'pdf/generate_undangan.php?download=true&archive_folder=' + encodeURIComponent(folderName); 
+                        document.body.appendChild(iframe);
+                        
+                        // Show notification
+                        setTimeout(() => {
+                            alert('Undangan berhasil diarsipkan dan PDF diunduh!');
+                            btn.innerText = originalText;
+                            btn.disabled = false;
+                        }, 1000);
 
                     } else {
-                        alert('Gagal menyimpan data session. Cek console.');
+                        alert('Gagal menyimpan data arsip. Response: ' + result);
                         console.log(result);
+                        btn.innerText = originalText;
+                        btn.disabled = false;
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     alert('Terjadi kesalahan sistem.');
+                    btn.innerText = originalText;
+                    btn.disabled = false;
                 });
         }
     </script>
