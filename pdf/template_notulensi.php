@@ -34,7 +34,8 @@ $data['agenda'] = '
 /* ================= ISI RESUME (WAJIB MASUK SINI) ================= */
 /* ================= ISI RESUME (WAJIB MASUK SINI) ================= */
 // Helper to force inline style for PDF compatibility
-function fixIndent($html) {
+function fixIndent($html)
+{
     if (!$html) return '';
     // Replace class="... first-line-indent ..." with hard spaces
     // CSS text-indent is unreliable in some PDF engines in this context
@@ -163,21 +164,26 @@ $kesimpulan = fixIndent($data['kesimpulan'] ?? '');
     }
 
     /* KESIMPULAN LIST */
-    .resume-table ul, .resume-table ol {
+    .resume-table ul,
+    .resume-table ol {
         margin: 0;
         padding-left: 20px;
     }
+
     .resume-table li {
         text-align: justify;
         margin-bottom: 5px;
     }
+
     .resume-table li::marker {
         font-weight: bold;
     }
 
-    p.first-line-indent, .first-line-indent {
+    p.first-line-indent,
+    .first-line-indent {
         text-indent: 40px !important;
-        margin-left: 0 !important; /* Ensure no margin overrides it */
+        margin-left: 0 !important;
+        /* Ensure no margin overrides it */
     }
 </style>
 
@@ -186,7 +192,7 @@ $kesimpulan = fixIndent($data['kesimpulan'] ?? '');
     <tr>
         <td class="label-a" rowspan="2">Unit Kerja</td>
         <td class="label-b" rowspan="2"><?= $data['unit_kerja'] ?? '' ?></td>
-        
+
         <td class="label-c">Tanggal</td>
         <td class="label-d"><?= formatTanggalIndo($data['tanggal'] ?? '') ?></td>
     </tr>
@@ -306,7 +312,7 @@ $p_notulis = $data['p_notulis'] ?? 'Nurine Kristy';
         <td style="border: none; width: 40%; text-align: center; vertical-align: top;">
             <p style="margin-bottom: 20px;"><?= $p_tempat ?>, <?= formatTanggalIndo($p_tanggal) ?></p>
             <p style="margin-top: 20px;">Notulis</p>
-            
+
             <!-- Space Tanda Tangan Manual -->
             <br><br><br>
 
@@ -317,24 +323,24 @@ $p_notulis = $data['p_notulis'] ?? 'Nurine Kristy';
 
 <!-- ================= DOKUMENTASI (MULTI PAGE) ================= -->
 <?php if (!empty($data['dokumentasi'])): ?>
-    <?php 
-        // Chunk images -> 2 per page
-        $chunks = array_chunk($data['dokumentasi'], 2);
-        $docPage = 1;
+    <?php
+    // Chunk images -> 2 per page
+    $chunks = array_chunk($data['dokumentasi'], 2);
+    $docPage = 1;
     ?>
 
     <?php foreach ($chunks as $chunk): ?>
         <div class="page-break"></div>
         <h3 style="text-align: center; margin-bottom: 20px;">DOKUMENTASI <?= count($chunks) > 1 && $docPage > 1 ? '(Lanjutan)' : '' ?></h3>
-        
+
         <div style="text-align: center;">
             <?php foreach ($chunk as $docPath): ?>
-                <?php 
-                    $fullPath = __DIR__ . '/../' . $docPath;
-                    if (file_exists($fullPath)): 
+                <?php
+                $fullPath = __DIR__ . '/../' . $docPath;
+                if (file_exists($fullPath)):
                 ?>
                     <div style="margin-bottom: 30px;">
-                        <img src="<?= $docPath ?>" style="max-width: 100%; max-height: 100mm;">
+                        <img src="<?= $fullPath ?>" style="max-width: 100%; max-height: 100mm;">
                     </div>
                 <?php endif; ?>
             <?php endforeach; ?>
@@ -345,23 +351,23 @@ $p_notulis = $data['p_notulis'] ?? 'Nurine Kristy';
 
 <!-- ================= DAFTAR HADIR (ABSENSI) ================= -->
 <?php if (!empty($data['absensi'])): ?>
-    <?php 
-        // 1 Image per page for Absensi (assuming landscape/large)
-        $docPage = 1;
+    <?php
+    // 1 Image per page for Absensi (assuming landscape/large)
+    $docPage = 1;
     ?>
 
     <?php foreach ($data['absensi'] as $absPath): ?>
         <div class="page-break"></div>
         <h3 style="text-align: center; margin-bottom: 20px;">DAFTAR HADIR <?= count($data['absensi']) > 1 && $docPage > 1 ? '(Lanjutan)' : '' ?></h3>
-        
+
         <div style="text-align: center;">
-            <?php 
-                $fullPath = __DIR__ . '/../' . $absPath;
-                if (file_exists($fullPath)): 
+            <?php
+            $fullPath = __DIR__ . '/../' . $absPath;
+            if (file_exists($fullPath)):
             ?>
                 <div style="margin-bottom: 30px;">
                     <!-- Use max-height ~150mm to fit landscape A4 comfortably within margins -->
-                    <img src="<?= $absPath ?>" style="max-width: 100%; max-height: 150mm;">
+                    <img src="<?= $fullPath ?>" style="max-width: 100%; max-height: 150mm;">
                 </div>
             <?php endif; ?>
         </div>

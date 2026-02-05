@@ -3,23 +3,23 @@
 if (isset($_GET['load'])) {
     $folder = preg_replace('/[^A-Za-z0-9\-_]/', '_', $_GET['load']);
     $jsonPath = 'arsip/' . $folder . '/undangan.json';
-    
+
     if (file_exists($jsonPath)) {
         $loaded = json_decode(file_get_contents($jsonPath), true);
         if ($loaded) {
-        if ($loaded) {
-            $nomor    = $loaded['nomor'] ?? null;
-            $sifat    = $loaded['sifat'] ?? null;
-            $lampiran = $loaded['lampiran'] ?? null;
-            $hal      = $loaded['hal'] ?? null;
-            $tglsurat = $loaded['tanggal'] ?? null; // 'tanggal' in JSON maps to 'tglsurat' var
-            $kepada   = $loaded['kepada'] ?? null;
-            // Note: 'isi' might not be saved in current save_undangan.php logic, check later if needed.
-            $hari     = $loaded['hari_tanggal'] ?? null;
-            $waktu    = $loaded['pukul_mulai'] ?? null;
-            $tempat   = $loaded['tempat'] ?? null;
-            $agenda   = $loaded['agenda'] ?? null;
-        }
+            if ($loaded) {
+                $nomor    = $loaded['nomor'] ?? null;
+                $sifat    = $loaded['sifat'] ?? null;
+                $lampiran = $loaded['lampiran'] ?? null;
+                $hal      = $loaded['hal'] ?? null;
+                $tglsurat = $loaded['tanggal'] ?? null; // 'tanggal' in JSON maps to 'tglsurat' var
+                $kepada   = $loaded['kepada'] ?? null;
+                // Note: 'isi' might not be saved in current save_undangan.php logic, check later if needed.
+                $hari     = $loaded['hari_tanggal'] ?? null;
+                $waktu    = $loaded['pukul_mulai'] ?? null;
+                $tempat   = $loaded['tempat'] ?? null;
+                $agenda   = $loaded['agenda'] ?? null;
+            }
         }
     }
 }
@@ -432,6 +432,10 @@ function formatWaktu($w)
             <div class="form-container">
                 <form id="formUndangan" method="post">
                     <h3 class="card-head">Buat Undangan</h3>
+
+                    <label>Nama Kegiatan Rapat</label>
+                    <input name="f_nama_kegiatan" placeholder="Contoh: Pembinaan Desa Cantik 2026" required>
+
                     <label>Nomor Surat</label>
                     <input name="f_nomor" value="<?= htmlspecialchars($nomor) ?>">
                     <a href="https://sites.google.com/view/permintaan-nomor-surat/no-surat-2025"
@@ -612,6 +616,13 @@ function formatWaktu($w)
         }
 
         function submitCetak() {
+            // Validasi Field Nama Kegiatan
+            const namaKegiatan = form.querySelector('[name="f_nama_kegiatan"]').value.trim();
+            if (!namaKegiatan) {
+                alert('PERINGATAN: Harap isi "Nama Kegiatan Rapat" terlebih dahulu sebelum mencetak PDF agar arsip dapat dikelompokkan dengan benar.');
+                return;
+            }
+
             const data = new FormData(form);
 
             // Change button text to indicate loading
@@ -630,15 +641,15 @@ function formatWaktu($w)
                     // Jika sukses, result akan berisi Nama Folder (misal: 2024-02-04_Kegiatan)
                     // Kita anggap sukses jika tidak kosong dan tidak ada error PHP fatal (bisa divalidasi lebih lanjut)
                     const folderName = result.trim();
-                    
+
                     if (folderName && !folderName.includes('<br') && !folderName.includes('Error')) {
                         // 2. Sukses Simpan -> Trigger Download Silent via Iframe + Auto Save to Archive folder
                         const iframe = document.createElement('iframe');
                         iframe.style.display = 'none';
                         // Pass folder name to generator
-                        iframe.src = 'pdf/generate_undangan.php?download=true&archive_folder=' + encodeURIComponent(folderName); 
+                        iframe.src = 'pdf/generate_undangan.php?download=true&archive_folder=' + encodeURIComponent(folderName);
                         document.body.appendChild(iframe);
-                        
+
                         // Show notification
                         setTimeout(() => {
                             alert('Undangan berhasil diarsipkan dan PDF diunduh!');

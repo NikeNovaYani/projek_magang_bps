@@ -84,17 +84,24 @@ if (!empty($_FILES['dokumentasi']['name'][0])) {
     }
 
     // Merge with existing or overwrite? 
-    // Requirement implies "new upload", let's overwrite for simplicity unless user adds more.
-    // For now, let's just replace the session data with new files if uploaded.
+    // Requirement: Merge new uploads with existing files validation
+    $finalDocs = $_POST['existing_dokumentasi'] ?? [];
+
     if (!empty($uploadedFiles)) {
-        $data['dokumentasi'] = $uploadedFiles;
-    } else {
-        // keep old if exists
-        $data['dokumentasi'] = $_SESSION['notulensi']['dokumentasi'];
+        // Merge arrays
+        $finalDocs = array_merge($finalDocs, $uploadedFiles);
     }
+
+    // Ensure uniqueness if needed
+    $data['dokumentasi'] = array_unique($finalDocs);
 } else {
-    // If no new file uploaded, keep existing session data
-    $data['dokumentasi'] = $_SESSION['notulensi']['dokumentasi'] ?? [];
+    // If no new file uploaded, check if we have existing files sent
+    if (isset($_POST['existing_dokumentasi'])) {
+        $data['dokumentasi'] = $_POST['existing_dokumentasi'];
+    } else {
+        // Fallback to session (only if not POSTing form, or safety net)
+        $data['dokumentasi'] = $_SESSION['notulensi']['dokumentasi'] ?? [];
+    }
 }
 
 /* =========================
@@ -124,13 +131,19 @@ if (!empty($_FILES['absensi']['name'][0])) {
         }
     }
 
+    $finalAbs = $_POST['existing_absensi'] ?? [];
+
     if (!empty($uploadedFilesAbsensi)) {
-        $data['absensi'] = $uploadedFilesAbsensi;
-    } else {
-        $data['absensi'] = $_SESSION['notulensi']['absensi'];
+        $finalAbs = array_merge($finalAbs, $uploadedFilesAbsensi);
     }
+
+    $data['absensi'] = array_unique($finalAbs);
 } else {
-    $data['absensi'] = $_SESSION['notulensi']['absensi'] ?? [];
+    if (isset($_POST['existing_absensi'])) {
+        $data['absensi'] = $_POST['existing_absensi'];
+    } else {
+        $data['absensi'] = $_SESSION['notulensi']['absensi'] ?? [];
+    }
 }
 
 /* =========================
@@ -143,17 +156,44 @@ if (isset($_GET['action']) && $_GET['action'] === 'archive') {
     $arsipDir = '../arsip/';
     if (!is_dir($arsipDir)) mkdir($arsipDir, 0777, true);
 
-    // Format Folder: YYYY-MM-DD_Topik
-    $topik = trim($data['topik'] ?: 'Rapat_Tanpa_Judul');
-    $safeTopik = preg_replace('/[^A-Za-z0-9\-_]/', '_', $topik);
-    $folderName = date('Y-m-d') . '_' . $safeTopik;
+    // Format Folder: YYYY-MM-DD_NamaKegiatan
+    $namaKegiatan = trim($_POST['nama_kegiatan'] ?? '');
+    if (empty($namaKegiatan)) {
+        // Fallback
+        $namaKegiatan = trim($data['topik'] ?: 'Rapat_Tanpa_Judul');
+    }
+
+    $safeName = preg_replace('/[^A-Za-z0-9\-_]/', '_', $namaKegiatan);
+
+    // Checks for existing folder by suffix
+    $existingFolder = null;
+    $folders = scandir($arsipDir);
+    foreach ($folders as $f) {
+        if ($f === '.' || $f === '..') continue;
+        if (strpos($f, '_' . $safeName) !== false) {
+            $existingFolder = $f;
+            break;
+        }
+    }
+
+    if ($existingFolder) {
+        $folderName = $existingFolder;
+    } else {
+        $folderName = date('Y-m-d') . '_' . $safeName;
+    }
+
     $targetDir = $arsipDir . $folderName . '/';
 
     // Buat Struktur Folder
+    // Buat Struktur Folder
     if (!is_dir($targetDir)) {
         mkdir($targetDir, 0777, true);
-        $subfolders = ['undangan', 'notulensi', 'absensi']; // Standard structure
-        foreach ($subfolders as $sub) {
+    }
+
+    // Ensure all subfolders exist (even if main folder existed previously)
+    $subfolders = ['undangan', 'notulensi', 'absensi', 'dokumentasi'];
+    foreach ($subfolders as $sub) {
+        if (!is_dir($targetDir . $sub . '/')) {
             mkdir($targetDir . $sub . '/', 0777, true);
         }
     }
@@ -179,15 +219,17 @@ if (isset($_GET['action']) && $_GET['action'] === 'archive') {
         foreach ($data['dokumentasi'] as $fileRelPath) {
             $src = '../' . $fileRelPath;
             if (file_exists($src)) {
-                $dest = $targetDir . 'notulensi/' . basename($src);
+                $dest = $targetDir . 'dokumentasi/' . basename($src);
                 copy($src, $dest);
             }
         }
     }
+
+    // Log the response
+    file_put_contents('../tmp/save_response_log.txt', "Returning folder: " . $folderName . "\n", FILE_APPEND);
 
     echo $folderName;
     exit;
 }
 
 echo 'OK';
-?>

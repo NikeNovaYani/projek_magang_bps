@@ -762,6 +762,29 @@ if ($is_print) {
                         </div>
                         <div class="card-body">
                             <form method="POST" id="notulenForm">
+                                <!-- HIDDEN INPUTS FOR EXISTING FILES -->
+                                <?php if (!empty($dokumentasi_files)): ?>
+                                    <?php foreach ($dokumentasi_files as $f):
+                                        $val = $f;
+                                        // Fix path for archive files
+                                        if (isset($is_loaded_from_archive) && $is_loaded_from_archive && !str_starts_with($f, 'arsip/') && !str_starts_with($f, 'uploads/')) {
+                                            $val = 'arsip/' . ($folder ?? '') . '/' . $f;
+                                        }
+                                    ?>
+                                        <input type="hidden" name="existing_dokumentasi[]" value="<?= htmlspecialchars($val) ?>">
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+
+                                <?php if (!empty($absensi_files)): ?>
+                                    <?php foreach ($absensi_files as $f):
+                                        $val = $f;
+                                        if (isset($is_loaded_from_archive) && $is_loaded_from_archive && !str_starts_with($f, 'arsip/') && !str_starts_with($f, 'uploads/')) {
+                                            $val = 'arsip/' . ($folder ?? '') . '/' . $f;
+                                        }
+                                    ?>
+                                        <input type="hidden" name="existing_absensi[]" value="<?= htmlspecialchars($val) ?>">
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                                 <!-- DATA RAPAT (Collapsible) -->
                                 <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; margin-bottom: 20px;">
                                     <div style="padding: 12px 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="toggleDataRapat(this)">
@@ -772,6 +795,10 @@ if ($is_print) {
                                     <div id="data-rapat-content" style="display: none; padding: 15px; border-top: 1px dashed #cbd5e1; background: #fff; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
 
                                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                                            <div>
+                                                <label class="hint">Nama Kegiatan Rapat</label>
+                                                <textarea name="nama_kegiatan" rows="1" placeholder="Contoh: Pembinaan Desa Cantik 2026"></textarea>
+                                            </div>
                                             <div>
                                                 <label class="hint">Unit Kerja</label>
                                                 <textarea name="unit_kerja" rows="1"><?= htmlspecialchars($unit_kerja) ?></textarea>

@@ -1,0 +1,44 @@
+2026-02-05 09:11:42 ERROR in generate_notulensi.php:
+Message: Could not find image file (http://localhost/projek_magang_bps/pdf/uploads/dokumentasi/doc_698450bd6f583.png)
+File: C:\xampp\htdocs\projek_magang_bps\vendor\mpdf\mpdf\src\Image\ImageProcessor.php on line 575
+Trace:
+#0 C:\xampp\htdocs\projek_magang_bps\vendor\mpdf\mpdf\src\Image\ImageProcessor.php(197): Mpdf\Image\ImageProcessor->imageError('http://localhos...', true, 'Could not find ...')
+#1 C:\xampp\htdocs\projek_magang_bps\vendor\mpdf\mpdf\src\Tag\Img.php(276): Mpdf\Image\ImageProcessor->getImage('http://localhos...', true, true, 'uploads/dokumen...', false)
+#2 C:\xampp\htdocs\projek_magang_bps\vendor\mpdf\mpdf\src\Tag.php(240): Mpdf\Tag\Img->open(Array, Array, 285)
+#3 C:\xampp\htdocs\projek_magang_bps\vendor\mpdf\mpdf\src\Mpdf.php(13929): Mpdf\Tag->OpenTag('IMG', Array, Array, 285)
+#4 C:\xampp\htdocs\projek_magang_bps\pdf\generate_notulensi.php(30): Mpdf\Mpdf->WriteHTML(' <table class="...')
+#5 {main}
+
+2026-02-05 09:13:04 ERROR in generate_notulensi.php:
+Message: Could not find image file (http://localhost/projek_magang_bps/pdf/uploads/dokumentasi/doc_6984510fa2028.png)
+File: C:\xampp\htdocs\projek_magang_bps\vendor\mpdf\mpdf\src\Image\ImageProcessor.php on line 575
+Trace:
+#0 C:\xampp\htdocs\projek_magang_bps\vendor\mpdf\mpdf\src\Image\ImageProcessor.php(197): Mpdf\Image\ImageProcessor->imageError('http://localhos...', true, 'Could not find ...')
+#1 C:\xampp\htdocs\projek_magang_bps\vendor\mpdf\mpdf\src\Tag\Img.php(276): Mpdf\Image\ImageProcessor->getImage('http://localhos...', true, true, 'uploads/dokumen...', false)
+#2 C:\xampp\htdocs\projek_magang_bps\vendor\mpdf\mpdf\src\Tag.php(240): Mpdf\Tag\Img->open(Array, Array, 273)
+#3 C:\xampp\htdocs\projek_magang_bps\vendor\mpdf\mpdf\src\Mpdf.php(13929): Mpdf\Tag->OpenTag('IMG', Array, Array, 273)
+#4 C:\xampp\htdocs\projek_magang_bps\pdf\generate_notulensi.php(30): Mpdf\Mpdf->WriteHTML(' <table class="...')
+#5 {main}
+
+2026-02-05 09:23:24 ERROR in generate_notulensi.php:
+Message: Could not find image file (http://localhost/projek_magang_bps/pdf/uploads/dokumentasi/doc_6984537c4746a.png)
+File: C:\xampp\htdocs\projek_magang_bps\vendor\mpdf\mpdf\src\Image\ImageProcessor.php on line 575
+Trace:
+#0 C:\xampp\htdocs\projek_magang_bps\vendor\mpdf\mpdf\src\Image\ImageProcessor.php(197): Mpdf\Image\ImageProcessor->imageError('http://localhos...', true, 'Could not find ...')
+#1 C:\xampp\htdocs\projek_magang_bps\vendor\mpdf\mpdf\src\Tag\Img.php(276): Mpdf\Image\ImageProcessor->getImage('http://localhos...', true, true, 'uploads/dokumen...', false)
+#2 C:\xampp\htdocs\projek_magang_bps\vendor\mpdf\mpdf\src\Tag.php(240): Mpdf\Tag\Img->open(Array, Array, 273)
+#3 C:\xampp\htdocs\projek_magang_bps\vendor\mpdf\mpdf\src\Mpdf.php(13929): Mpdf\Tag->OpenTag('IMG', Array, Array, 273)
+#4 C:\xampp\htdocs\projek_magang_bps\pdf\generate_notulensi.php(30): Mpdf\Mpdf->WriteHTML(' <table class="...')
+#5 {main}
+
+2026-02-05 09:27:47 ERROR in generate_notulensi.php:
+Message: Could not find image file (http://localhost/projek_magang_bps/pdf/uploads/dokumentasi/doc_6984548342c79.png)
+File: C:\xampp\htdocs\projek_magang_bps\vendor\mpdf\mpdf\src\Image\ImageProcessor.php on line 575
+Trace:
+#0 C:\xampp\htdocs\projek_magang_bps\vendor\mpdf\mpdf\src\Image\ImageProcessor.php(197): Mpdf\Image\ImageProcessor->imageError('http://localhos...', true, 'Could not find ...')
+#1 C:\xampp\htdocs\projek_magang_bps\vendor\mpdf\mpdf\src\Tag\Img.php(276): Mpdf\Image\ImageProcessor->getImage('http://localhos...', true, true, 'uploads/dokumen...', false)
+#2 C:\xampp\htdocs\projek_magang_bps\vendor\mpdf\mpdf\src\Tag.php(240): Mpdf\Tag\Img->open(Array, Array, 273)
+#3 C:\xampp\htdocs\projek_magang_bps\vendor\mpdf\mpdf\src\Mpdf.php(13929): Mpdf\Tag->OpenTag('IMG', Array, Array, 273)
+#4 C:\xampp\htdocs\projek_magang_bps\pdf\generate_notulensi.php(31): Mpdf\Mpdf->WriteHTML(' <table class="...')
+#5 {main}
+

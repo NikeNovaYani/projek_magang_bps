@@ -27,6 +27,7 @@ function get_files_in_subfolder($path)
 $undangan_files = get_files_in_subfolder($folder_path . 'undangan/');
 $notulensi_files = get_files_in_subfolder($folder_path . 'notulensi/');
 $absensi_files = get_files_in_subfolder($folder_path . 'absensi/');
+$dokumentasi_files = get_files_in_subfolder($folder_path . 'dokumentasi/');
 
 $message = '';
 $message_type = '';
@@ -47,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file'])) {
 
         // --- SYNC TO NOTULENSI.JSON ---
         $jsonFile = $folder_path . 'notulensi.json';
-        if (file_exists($jsonFile) && ($subfolder === 'absensi' || $subfolder === 'notulensi')) {
+        if (file_exists($jsonFile) && ($subfolder === 'absensi' || $subfolder === 'dokumentasi')) {
             $jsonData = json_decode(file_get_contents($jsonFile), true) ?? [];
             $key = ($subfolder === 'absensi') ? 'absensi' : 'dokumentasi';
 
@@ -83,7 +84,7 @@ if (isset($_GET['delete']) && isset($_GET['subfolder'])) {
 
         // --- SYNC TO NOTULENSI.JSON ---
         $jsonFile = $folder_path . 'notulensi.json';
-        if (file_exists($jsonFile) && ($sub === 'absensi' || $sub === 'notulensi')) {
+        if (file_exists($jsonFile) && ($sub === 'absensi' || $sub === 'dokumentasi')) {
             $jsonData = json_decode(file_get_contents($jsonFile), true) ?? [];
             $key = ($sub === 'absensi') ? 'absensi' : 'dokumentasi';
 
@@ -543,7 +544,36 @@ $json_notulensi = file_exists($folder_path . 'notulensi.json');
                     </ul>
                 </div>
 
-                <!-- NOTULENSI -->
+                <!-- DOKUMENTASI (NEW) -->
+                <div class="file-section">
+                    <div class="fs-header">
+                        <i class="fas fa-camera"></i>
+                        <span class="fs-title">Dokumentasi</span>
+                        <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+                            <button onclick="triggerUpload('dokumentasi')" class="btn-action btn-action-upload" title="Upload File">
+                                <i class="fas fa-cloud-upload-alt"></i> Upload
+                            </button>
+                        </div>
+                    </div>
+
+                    <ul class="file-list">
+                        <?php if (empty($dokumentasi_files)): ?>
+                            <div class="empty-msg">Belum ada file</div>
+                        <?php else: ?>
+                            <?php foreach ($dokumentasi_files as $f): ?>
+                                <li class="file-item">
+                                    <span class="f-name"><i class="far fa-image"></i> <?= $f ?></span>
+                                    <div class="f-actions">
+                                        <a href="<?= $folder_path ?>dokumentasi/<?= $f ?>" download class="f-btn" title="Download"><i class="fas fa-download"></i></a>
+                                        <a href="view_folder.php?folder=<?= urlencode($folder) ?>&delete=<?= urlencode($f) ?>&subfolder=dokumentasi" class="f-btn del" onclick="return confirm('Hapus file ini?')" title="Hapus"><i class="fas fa-trash"></i></a>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </ul>
+                </div>
+
+                <!-- NOTULENSI (PDF ONLY) -->
                 <div class="file-section">
                     <div class="fs-header">
                         <i class="fas fa-file-alt"></i>

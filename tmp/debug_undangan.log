@@ -1,0 +1,51 @@
+2026-02-05 05:42:39 POST Data: Array
+(
+    [f_nama_kegiatan] => 
+    [f_nomor] => B-32766/32766/BPS/2024
+    [f_sifat] => Biasa
+    [f_lampiran] => -
+    [f_hal] => Undangan Pembahasan Optimalisasi Anggaran Perjadin 2025
+    [f_tglsurat] => 2026-02-05
+    [f_kepada] => 1. Seluruh Ketua Tim BPS Kota Depok
+2. PPK BPS Kota Depok
+    [f_isi] => Sehubungan dengan menjelang akan berakhirnya tahun anggaran 2025, Kepala BPS Kota Depok mengundang seluruh Ketua Tim dan PPK BPS Kota Depok untuk hadir dalam rapat yang akan diselenggarakan pada
+    [f_hari] => 2024-11-11
+    [f_waktu] => 13:30
+    [f_tempat] => Ruang Rapat BPS Kota Depok
+    [f_agenda] => Pembahasan Optimalisasi Anggaran
+)
+
+2026-02-05 05:43:25 POST Data: Array
+(
+    [f_nama_kegiatan] => seruti 2026
+    [f_nomor] => B-32766/32766/BPS/2024
+    [f_sifat] => Biasa
+    [f_lampiran] => -
+    [f_hal] => Undangan Pembahasan Anggaran Perjadin 2025
+    [f_tglsurat] => 2026-02-05
+    [f_kepada] => 1. Seluruh Ketua Tim BPS Kota Depok
+2. PPK BPS Kota Depok
+    [f_isi] => Sehubungan dengan menjelang akan berakhirnya tahun anggaran 2025, Kepala BPS Kota Depok mengundang seluruh Ketua Tim dan PPK BPS Kota Depok untuk hadir dalam rapat yang akan diselenggarakan pada
+    [f_hari] => 2024-11-11
+    [f_waktu] => 09:00
+    [f_tempat] => Ruang Rapat BPS Kota Depok
+    [f_agenda] => Pembahasan Optimalisasi Anggaran
+)
+
+2026-02-05 05:43:55 POST Data: Array
+(
+    [f_nama_kegiatan] => 
+    [f_nomor] => B-32766/32766/BPS/2024
+    [f_sifat] => Biasa
+    [f_lampiran] => -
+    [f_hal] => Undangan Pembahasan Optimalisasi Anggaran Perjadin 2025
+    [f_tglsurat] => 2026-02-05
+    [f_kepada] => 1. Seluruh Ketua Tim BPS Kota Depok
+2. PPK BPS Kota Depok
+    [f_isi] => Sehubungan dengan menjelang akan berakhirnya tahun anggaran 2025, Kepala BPS Kota Depok mengundang seluruh Ketua Tim dan PPK BPS Kota Depok untuk hadir dalam rapat yang akan diselenggarakan pada
+    [f_hari] => 2024-11-11
+    [f_waktu] => 13:30
+    [f_tempat] => Ruang Rapat BPS Kota Depok
+    [f_agenda] => Pembahasan Optimalisasi Anggaran
+)
+
