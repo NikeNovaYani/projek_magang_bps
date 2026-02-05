@@ -260,6 +260,7 @@ $folders = get_folders($arsip_dir);
         /* CARD STYLE (White Box with Shadow) */
         .card-panel {
             width: 100%;
+            height: auto;
             background: white;
             padding: 25px;
             border-radius: 12px;
@@ -270,7 +271,7 @@ $folders = get_folders($arsip_dir);
         .card-head h3 {
             margin-top: 0;
             color: #1976d2;
-            font-size: 20px;
+            font-size: 18px;
             border-bottom: 2px solid #e3f2fd;
             padding-bottom: 10px;
             margin-bottom: 20px;
@@ -286,6 +287,7 @@ $folders = get_folders($arsip_dir);
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
+            font-size: 15px;
             color: #1619ccff;
         }
 
@@ -313,7 +315,7 @@ $folders = get_folders($arsip_dir);
 
         .upload-item {
             border: 2px dashed #bbdefb;
-            padding: 15px;
+            padding: 5px;
             border-radius: 8px;
             text-align: center;
             background: #fdfdfd;
@@ -331,14 +333,14 @@ $folders = get_folders($arsip_dir);
         }
 
         .upload-item i {
-            font-size: 24px;
+            font-size: 18px;
             color: #1976d2;
             margin-bottom: 10px;
             display: block;
         }
 
         .upload-item span {
-            font-size: 13px;
+            font-size: 10px;
             font-weight: 600;
             color: #555;
             display: block;
@@ -356,12 +358,12 @@ $folders = get_folders($arsip_dir);
             background: #1976d2;
             color: white;
             border: none;
-            padding: 12px 25px;
+            padding: 8px 10px;
             border-radius: 6px;
             font-weight: bold;
             cursor: pointer;
             transition: background 0.3s;
-            margin-top: 20px;
+            margin-top: 5px;
             display: inline-flex;
             align-items: center;
             gap: 8px;

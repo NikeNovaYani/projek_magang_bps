@@ -4,10 +4,18 @@ if (isset($_GET['load'])) {
     $folder = preg_replace('/[^A-Za-z0-9\-_]/', '_', $_GET['load']);
     $jsonPath = 'arsip/' . $folder . '/undangan.json';
 
+    // Extract Nama Kegiatan from Folder Name (Fallback)
+    $parts = explode('_', $folder, 2);
+    $nama_kegiatan = isset($parts[1]) ? str_replace('_', ' ', $parts[1]) : '';
+
     if (file_exists($jsonPath)) {
         $loaded = json_decode(file_get_contents($jsonPath), true);
         if ($loaded) {
             if ($loaded) {
+                // If JSON has specific name, override (optional, currently JSON might not have it)
+                if (!empty($loaded['nama_kegiatan'])) {
+                    $nama_kegiatan = $loaded['nama_kegiatan'];
+                }
                 $nomor    = $loaded['nomor'] ?? null;
                 $sifat    = $loaded['sifat'] ?? null;
                 $lampiran = $loaded['lampiran'] ?? null;
@@ -434,7 +442,7 @@ function formatWaktu($w)
                     <h3 class="card-head">Buat Undangan</h3>
 
                     <label>Nama Kegiatan Rapat</label>
-                    <input name="f_nama_kegiatan" placeholder="Contoh: Pembinaan Desa Cantik 2026" required>
+                    <input name="f_nama_kegiatan" value="<?= htmlspecialchars($nama_kegiatan ?? '') ?>" placeholder="Contoh: Pembinaan Desa Cantik 2026" required>
 
                     <label>Nomor Surat</label>
                     <input name="f_nomor" value="<?= htmlspecialchars($nomor) ?>">
@@ -462,7 +470,7 @@ function formatWaktu($w)
 
 
                     <div class="btn-group">
-                        <button type="submit" class="btn-lihat" onclick="submitNormal()">Lihat Preview</button>
+                        <button type="submit" class="btn-lihat" onclick="submitNormal()">Simpan</button>
                         <button type="button" class="btn-print" onclick="submitCetak()">Cetak PDF</button>
                     </div>
                 </form>

@@ -33,8 +33,13 @@ if (isset($_GET['load'])) {
     $jsonPath = 'arsip/' . $folder . '/notulensi.json';
 
     if (file_exists($jsonPath)) {
+        // Extract Nama Kegiatan from Folder Name
+        $parts = explode('_', $folder, 2);
+        $nama_kegiatan_default = isset($parts[1]) ? str_replace('_', ' ', $parts[1]) : '';
+
         $loaded = json_decode(file_get_contents($jsonPath), true);
         if ($loaded) {
+            $nama_kegiatan = $loaded['nama_kegiatan'] ?? $nama_kegiatan_default; // Use JSON if available, else folder name
             $unit_kerja    = $loaded['unit_kerja'] ?? $unit_kerja;
             $tanggal_raw   = $loaded['tanggal'] ?? $tanggal_raw;
             $pimpinan      = $loaded['pimpinan'] ?? $pimpinan;
@@ -767,7 +772,7 @@ if ($is_print) {
                                     <?php foreach ($dokumentasi_files as $f):
                                         $val = $f;
                                         // Fix path for archive files
-                                        if (isset($is_loaded_from_archive) && $is_loaded_from_archive && !str_starts_with($f, 'arsip/') && !str_starts_with($f, 'uploads/')) {
+                                        if (isset($is_loaded_from_archive) && $is_loaded_from_archive && (strpos($f, 'arsip/') !== 0) && (strpos($f, 'uploads/') !== 0)) {
                                             $val = 'arsip/' . ($folder ?? '') . '/' . $f;
                                         }
                                     ?>
@@ -778,7 +783,7 @@ if ($is_print) {
                                 <?php if (!empty($absensi_files)): ?>
                                     <?php foreach ($absensi_files as $f):
                                         $val = $f;
-                                        if (isset($is_loaded_from_archive) && $is_loaded_from_archive && !str_starts_with($f, 'arsip/') && !str_starts_with($f, 'uploads/')) {
+                                        if (isset($is_loaded_from_archive) && $is_loaded_from_archive && (strpos($f, 'arsip/') !== 0) && (strpos($f, 'uploads/') !== 0)) {
                                             $val = 'arsip/' . ($folder ?? '') . '/' . $f;
                                         }
                                     ?>
@@ -797,7 +802,7 @@ if ($is_print) {
                                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
                                             <div>
                                                 <label class="hint">Nama Kegiatan Rapat</label>
-                                                <textarea name="nama_kegiatan" rows="1" placeholder="Contoh: Pembinaan Desa Cantik 2026"></textarea>
+                                                <textarea name="nama_kegiatan" rows="1" placeholder="Contoh: Pembinaan Desa Cantik 2026"><?= htmlspecialchars($nama_kegiatan ?? '') ?></textarea>
                                             </div>
                                             <div>
                                                 <label class="hint">Unit Kerja</label>

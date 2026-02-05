@@ -96,7 +96,7 @@ body{
     flex: 1;
     padding: 30px;
     overflow-y: auto;
-    margin-left: 180px;
+    margin-left: 140px;
 }
 
 /* ===== HEADER ===== */

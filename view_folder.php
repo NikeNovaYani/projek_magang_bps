@@ -309,8 +309,15 @@ $json_notulensi = file_exists($folder_path . 'notulensi.json');
         /* FILE SECTIONS */
         .files-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
+            grid-template-columns: 1fr 1fr;
+            grid-auto-rows: minmax(100px, auto);
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .files-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .file-section {
@@ -521,7 +528,7 @@ $json_notulensi = file_exists($folder_path . 'notulensi.json');
                             </button>
                             <?php if ($json_undangan): ?>
                                 <a href="index.php?page=undangan&load=<?= urlencode($folder) ?>" class="btn-action btn-action-edit" title="Edit Data Undangan">
-                                    <i class="fas fa-pen-to-square"></i> Edit Data
+                                    <i class="fas fa-pen-to-square"></i> Edit
                                 </a>
                             <?php endif; ?>
                         </div>
@@ -535,6 +542,7 @@ $json_notulensi = file_exists($folder_path . 'notulensi.json');
                                 <li class="file-item">
                                     <span class="f-name"><i class="far fa-file-pdf"></i> <?= $f ?></span>
                                     <div class="f-actions">
+                                        <a href="<?= $folder_path ?>undangan/<?= $f ?>" target="_blank" class="f-btn" title="Lihat"><i class="fas fa-eye"></i></a>
                                         <a href="<?= $folder_path ?>undangan/<?= $f ?>" download class="f-btn" title="Download"><i class="fas fa-download"></i></a>
                                         <a href="view_folder.php?folder=<?= urlencode($folder) ?>&delete=<?= urlencode($f) ?>&subfolder=undangan" class="f-btn del" onclick="return confirm('Hapus file ini?')" title="Hapus"><i class="fas fa-trash"></i></a>
                                     </div>
@@ -550,9 +558,6 @@ $json_notulensi = file_exists($folder_path . 'notulensi.json');
                         <i class="fas fa-camera"></i>
                         <span class="fs-title">Dokumentasi</span>
                         <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
-                            <button onclick="triggerUpload('dokumentasi')" class="btn-action btn-action-upload" title="Upload File">
-                                <i class="fas fa-cloud-upload-alt"></i> Upload
-                            </button>
                         </div>
                     </div>
 
@@ -564,6 +569,7 @@ $json_notulensi = file_exists($folder_path . 'notulensi.json');
                                 <li class="file-item">
                                     <span class="f-name"><i class="far fa-image"></i> <?= $f ?></span>
                                     <div class="f-actions">
+                                        <a href="<?= $folder_path ?>dokumentasi/<?= $f ?>" target="_blank" class="f-btn" title="Lihat"><i class="fas fa-eye"></i></a>
                                         <a href="<?= $folder_path ?>dokumentasi/<?= $f ?>" download class="f-btn" title="Download"><i class="fas fa-download"></i></a>
                                         <a href="view_folder.php?folder=<?= urlencode($folder) ?>&delete=<?= urlencode($f) ?>&subfolder=dokumentasi" class="f-btn del" onclick="return confirm('Hapus file ini?')" title="Hapus"><i class="fas fa-trash"></i></a>
                                     </div>
@@ -584,7 +590,7 @@ $json_notulensi = file_exists($folder_path . 'notulensi.json');
                             </button>
                             <?php if ($json_notulensi): ?>
                                 <a href="index.php?page=notulensi&load=<?= urlencode($folder) ?>" class="btn-action btn-action-edit" title="Edit Data Notulensi">
-                                    <i class="fas fa-pen-to-square"></i> Edit Data
+                                    <i class="fas fa-pen-to-square"></i> Edit
                                 </a>
                             <?php endif; ?>
                         </div>
@@ -598,6 +604,7 @@ $json_notulensi = file_exists($folder_path . 'notulensi.json');
                                 <li class="file-item">
                                     <span class="f-name"><i class="far fa-file-word"></i> <?= $f ?></span>
                                     <div class="f-actions">
+                                        <a href="<?= $folder_path ?>notulensi/<?= $f ?>" target="_blank" class="f-btn" title="Lihat"><i class="fas fa-eye"></i></a>
                                         <a href="<?= $folder_path ?>notulensi/<?= $f ?>" download class="f-btn" title="Download"><i class="fas fa-download"></i></a>
                                         <a href="view_folder.php?folder=<?= urlencode($folder) ?>&delete=<?= urlencode($f) ?>&subfolder=notulensi" class="f-btn del" onclick="return confirm('Hapus file ini?')" title="Hapus"><i class="fas fa-trash"></i></a>
                                     </div>
@@ -613,9 +620,6 @@ $json_notulensi = file_exists($folder_path . 'notulensi.json');
                         <i class="fas fa-user-check"></i>
                         <span class="fs-title">Absensi</span>
                         <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
-                            <button onclick="triggerUpload('absensi')" class="btn-action btn-action-upload" title="Upload File">
-                                <i class="fas fa-cloud-upload-alt"></i> Upload
-                            </button>
                         </div>
                     </div>
 
@@ -627,6 +631,7 @@ $json_notulensi = file_exists($folder_path . 'notulensi.json');
                                 <li class="file-item">
                                     <span class="f-name"><i class="far fa-image"></i> <?= $f ?></span>
                                     <div class="f-actions">
+                                        <a href="<?= $folder_path ?>absensi/<?= $f ?>" target="_blank" class="f-btn" title="Lihat"><i class="fas fa-eye"></i></a>
                                         <a href="<?= $folder_path ?>absensi/<?= $f ?>" download class="f-btn" title="Download"><i class="fas fa-download"></i></a>
                                         <a href="view_folder.php?folder=<?= urlencode($folder) ?>&delete=<?= urlencode($f) ?>&subfolder=absensi" class="f-btn del" onclick="return confirm('Hapus file ini?')" title="Hapus"><i class="fas fa-trash"></i></a>
                                     </div>
