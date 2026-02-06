@@ -557,6 +557,57 @@ $folders = get_folders($arsip_dir);
         .notification.error {
             border-color: #c62828;
         }
+
+        /* Badge untuk membedakan Arsip Manual vs Otomatis */
+.badge-sumber {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    margin-left: 8px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+/* Warna Orange untuk Manual */
+.badge-manual {
+    background-color: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #ffedd5;
+}
+/* Warna Biru untuk System */
+.badge-auto {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #dbeafe;
+}
+/* Style untuk Chip/Tombol File */
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    text-decoration: none;
+    margin-right: 5px;
+    transition: 0.2s;
+    border: 1px solid transparent;
+}
+.chip.active {
+    background-color: #f1f5f9;
+    color: #334155;
+    border-color: #cbd5e1;
+}
+.chip.active:hover {
+    background-color: #e2e8f0;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.chip.disabled {
+    background-color: #f8fafc;
+    color: #cbd5e1;
+    cursor: not-allowed;
+}
     </style>
 </head>
 
@@ -631,59 +682,115 @@ $folders = get_folders($arsip_dir);
 
             <!-- LIST ARSIP -->
             <div class="archive-grid">
-                <?php foreach ($folders as $folder): ?>
-                    <?php
-                    $parts = explode('_', $folder, 2);
-                    $date = $parts[0];
-                    $name = isset($parts[1]) ? str_replace('_', ' ', $parts[1]) : 'Unnamed';
-                    $path = $arsip_dir . $folder . '/';
+    <?php
+    // 1. Panggil Data dari VIEW SQL
+    $query = "SELECT * FROM view_semua_arsip ORDER BY tanggal DESC";
+    $result = mysqli_query($koneksi, $query);
 
-                    $has_undangan = has_files($path . 'undangan');
-                    $has_notulensi = has_files($path . 'notulensi');
-                    $has_absensi = has_files($path . 'absensi');
+    // 2. Loop Data Satu per Satu
+    while ($row = mysqli_fetch_assoc($result)): 
+        
+        // Cek Sumber Arsip (Manual / Otomatis)
+        $isManual = ($row['sumber'] == 'manual');
+        
+        // Tentukan Warna & Label
+        $iconColor   = $isManual ? '#f97316' : '#2563eb'; // Orange vs Biru
+        $sumberLabel = $isManual ? 'Manual Upload' : 'System Generated';
+        $sumberClass = $isManual ? 'badge-manual' : 'badge-auto';
+    ?>
 
-                    // Check for JSON Data
-                    $json_undangan = file_exists($path . 'undangan.json');
-                    ?>
-
-                    <div class="archive-card">
-                        <div class="ac-header">
-                            <i class="fas fa-folder ac-icon"></i>
-                            <div class="ac-actions">
-                                <!-- Edit button moved to view_folder.php -->
-                                <button class="edit-btn" onclick="toggleEdit('<?= $folder ?>')"><i class="fas fa-pen"></i></button>
-                                <button onclick="if(confirm('Hapus arsip ini?')) document.getElementById('del-<?= $folder ?>').submit()"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </div>
-
-                        <div class="ac-title"><?= htmlspecialchars($name) ?></div>
-                        <div class="ac-date"><i class="far fa-calendar"></i> <?= date('d M Y', strtotime($date)) ?></div>
-
-                        <!-- Edit Form -->
-                        <div id="edit-<?= $folder ?>" style="display:none; margin-bottom:10px;">
-                            <form method="post">
-                                <input type="hidden" name="edit_folder" value="true">
-                                <input type="hidden" name="old_folder" value="<?= $folder ?>">
-                                <div style="display:flex; gap:5px;">
-                                    <input type="text" name="new_name" value="<?= htmlspecialchars($name) ?>" class="form-control" style="font-size:12px; padding:5px;">
-                                    <button type="submit" style="background:#2e7d32; color:white; border:none; border-radius:4px;"><i class="fas fa-check"></i></button>
-                                </div>
-                            </form>
-                        </div>
-                        <form id="del-<?= $folder ?>" method="post" style="display:none;"><input type="hidden" name="delete_folder" value="<?= $folder ?>"></form>
-
-                        <div class="file-chips">
-                            <span class="chip <?= $has_undangan ? 'active' : '' ?>"><i class="fas fa-envelope"></i> Undangan</span>
-                            <span class="chip <?= $has_notulensi ? 'active' : '' ?>"><i class="fas fa-file-alt"></i> Notulensi</span>
-                            <span class="chip <?= $has_absensi ? 'active' : '' ?>"><i class="fas fa-user-check"></i> Absensi</span>
-                        </div>
-
-                        <a href="view_folder.php?folder=<?= urlencode($folder) ?>" class="btn-open">
-                            <i class="fas fa-external-link-alt"></i> Buka Arsip
-                        </a>
-                    </div>
-                <?php endforeach; ?>
+    <div class="archive-card">
+        <div class="ac-header">
+            <i class="fas fa-folder ac-icon" style="color: <?= $iconColor ?>"></i>
+            
+            <div class="ac-actions">
+                <?php if($isManual): ?>
+                    <form method="post" onsubmit="return confirm('Hapus arsip ini?');" style="display:inline;">
+                        <input type="hidden" name="id_hapus" value="<?= $row['id_referensi'] ?>">
+                        <button type="submit" name="hapus_manual" style="border:none; background:none; cursor:pointer; color:#ef4444;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
+                <?php else: ?>
+                     <i class="fas fa-robot" title="Arsip Otomatis" style="color: #cbd5e1;"></i>
+                <?php endif; ?>
             </div>
+        </div>
+
+        <div class="ac-title" title="<?= htmlspecialchars($row['nama_kegiatan']) ?>">
+            <?= htmlspecialchars(substr($row['nama_kegiatan'], 0, 50)) . (strlen($row['nama_kegiatan']) > 50 ? '...' : '') ?>
+        </div>
+        
+        <div class="ac-date">
+            <i class="far fa-calendar"></i> <?= date('d M Y', strtotime($row['tanggal'])) ?>
+            <span class="badge-sumber <?= $sumberClass ?>"><?= $sumberLabel ?></span>
+        </div>
+
+        <div class="file-chips" style="margin-top: 15px;">
+            
+            <?php if($row['ada_undangan']): ?>
+                <?php 
+                    if ($isManual) {
+                        // Path: arsip/2026-02-06 Nama/undangan/file.pdf
+                        $linkU = "arsip/" . $row['folder_path'] . "/undangan/" . $row['link_undangan'];
+                    } else {
+                        // Path: arsip_pdf/file.pdf (Hasil Generate)
+                        $linkU = "arsip_pdf/" . $row['link_undangan'];
+                    }
+                ?>
+                <a href="<?= $linkU ?>" target="_blank" class="chip active">
+                    <i class="fas fa-envelope"></i> Undangan
+                </a>
+            <?php else: ?>
+                <span class="chip disabled"><i class="fas fa-envelope"></i> Undangan</span>
+            <?php endif; ?>
+
+            <?php if($row['ada_notulensi']): ?>
+                <?php 
+                    if ($isManual) {
+                        // Path: arsip/2026-02-06 Nama/notulensi/file.pdf
+                        $linkN = "arsip/" . $row['folder_path'] . "/notulensi/" . $row['link_notulensi'];
+                    } else {
+                        // Link ke Halaman Cetak Notulen
+                        $linkN = "pages/cetak_notulensi.php?id=" . $row['id_referensi'];
+                    }
+                ?>
+                <a href="<?= $linkN ?>" target="_blank" class="chip active">
+                    <i class="fas fa-file-alt"></i> Notulensi
+                </a>
+            <?php else: ?>
+                <span class="chip disabled"><i class="fas fa-file-alt"></i> Notulensi</span>
+            <?php endif; ?>
+
+            <?php if($row['ada_absensi']): ?>
+                <?php 
+                    if ($isManual) {
+                        // Path: arsip/2026-02-06 Nama/absensi/file.png
+                        $linkA = "arsip/" . $row['folder_path'] . "/absensi/" . $row['link_absensi'];
+                    } else {
+                        // Link ke Halaman View Absensi
+                        $linkA = "index.php?page=absensi_view&id=" . $row['id_referensi'];
+                    }
+                ?>
+                <a href="<?= $linkA ?>" target="_blank" class="chip active">
+                    <i class="fas fa-user-check"></i> Absensi
+                </a>
+            <?php else: ?>
+                <span class="chip disabled"><i class="fas fa-user-check"></i> Absensi</span>
+            <?php endif; ?>
+
+        </div>
+    </div>
+
+    <?php endwhile; ?>
+
+    <?php if(mysqli_num_rows($result) == 0): ?>
+        <div style="grid-column: 1/-1; text-align:center; padding: 40px; color: #94a3b8; border: 2px dashed #cbd5e1; border-radius: 8px;">
+            <i class="fas fa-folder-open" style="font-size: 40px; margin-bottom: 10px; color: #cbd5e1;"></i>
+            <p>Belum ada arsip tersimpan.</p>
+        </div>
+    <?php endif; ?>
+</div>
 
         </div>
     </div>
