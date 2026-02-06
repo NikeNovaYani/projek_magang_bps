@@ -147,6 +147,61 @@ if (!empty($_FILES['absensi']['name'][0])) {
 }
 
 /* =========================
+   SIMPAN KE DATABASE
+========================= */
+require_once __DIR__ . '/../koneksi.php';
+
+if ($koneksi) {
+    // Escape variables
+    $nama_kegiatan = mysqli_real_escape_string($koneksi, $_POST['nama_kegiatan'] ?? '');
+    $unit_kerja    = mysqli_real_escape_string($koneksi, $data['unit_kerja'] ?? '');
+    $tanggal_rapat = mysqli_real_escape_string($koneksi, $data['tanggal'] ?? '');
+    $waktu_mulai   = mysqli_real_escape_string($koneksi, $data['pukul_mulai'] ?? '');
+    $waktu_selesai = mysqli_real_escape_string($koneksi, $data['pukul_selesai'] ?? '');
+    $tempat        = mysqli_real_escape_string($koneksi, $data['tempat'] ?? '');
+    $pimpinan      = mysqli_real_escape_string($koneksi, $data['pimpinan'] ?? '');
+    $topik         = mysqli_real_escape_string($koneksi, $data['topik'] ?? '');
+    $lampiran      = mysqli_real_escape_string($koneksi, $data['lampiran'] ?? ''); // Maps to lampiran_ket
+    $peserta       = mysqli_real_escape_string($koneksi, $data['peserta'] ?? '');
+    $agenda        = mysqli_real_escape_string($koneksi, $data['agenda'] ?? '');
+    $pembukaan     = mysqli_real_escape_string($koneksi, $data['pembukaan'] ?? '');
+    $pembahasan    = mysqli_real_escape_string($koneksi, $data['pembahasan'] ?? '');
+    $kesimpulan    = mysqli_real_escape_string($koneksi, $data['kesimpulan'] ?? '');
+
+    $p_tempat      = mysqli_real_escape_string($koneksi, $_POST['p_tempat'] ?? '');
+    $p_tanggal     = mysqli_real_escape_string($koneksi, $_POST['p_tanggal'] ?? '');
+    $p_notulis     = mysqli_real_escape_string($koneksi, $_POST['p_notulis'] ?? '');
+
+    // JSON Files
+    $json_dok      = mysqli_real_escape_string($koneksi, json_encode($data['dokumentasi'] ?? []));
+    $json_abs      = mysqli_real_escape_string($koneksi, json_encode($data['absensi'] ?? []));
+
+    // ID Undangan (Optional / NULL)
+    // Jika ada input hidden id_n (dari load undangan), gunakan. Jika tidak, NULL.
+    $id_n          = isset($_POST['id_n']) ? (int)$_POST['id_n'] : 'NULL';
+
+    $sql = "INSERT INTO notulensi (
+        id_n, nama_kegiatan, unit_kerja, tanggal_rapat, waktu_mulai, waktu_selesai, tempat, 
+        pimpinan_rapat, topik, lampiran_ket, peserta, agenda, 
+        isi_pembukaan, isi_pembahasan, isi_kesimpulan, 
+        tempat_pembuatan, tanggal_pembuatan, nama_notulis, 
+        foto_dokumentasi, foto_absensi
+    ) VALUES (
+        $id_n, '$nama_kegiatan', '$unit_kerja', '$tanggal_rapat', '$waktu_mulai', '$waktu_selesai', '$tempat',
+        '$pimpinan', '$topik', '$lampiran', '$peserta', '$agenda',
+        '$pembukaan', '$pembahasan', '$kesimpulan',
+        '$p_tempat', '$p_tanggal', '$p_notulis',
+        '$json_dok', '$json_abs'
+    )";
+
+    // Insert but don't stop execution if fails (maybe log error?)
+    if (!mysqli_query($koneksi, $sql)) {
+        // Option: Log error or just ignore for now since user wants "save to database"
+        error_log("DB Insert Error: " . mysqli_error($koneksi));
+    }
+}
+
+/* =========================
    SIMPAN KE SESSION
 ========================= */
 $_SESSION['notulensi'] = $data;

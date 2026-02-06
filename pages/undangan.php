@@ -32,6 +32,44 @@ if (isset($_GET['load'])) {
     }
 }
 
+/* ================= DATABASE CONNECTION ================= */
+require_once __DIR__ . '/../koneksi.php';
+
+// Ambil data pejabat (ambil 1 saja)
+$query_pejabat = mysqli_query($koneksi, "SELECT * FROM pejabat LIMIT 1");
+$pejabat = mysqli_fetch_assoc($query_pejabat);
+
+/* ================= SAVE TO DATABASE ================= */
+$msg_success = '';
+$msg_error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['f_nomor'])) { // Simple check to see if form is submitted
+    $nama_kegiatan = mysqli_real_escape_string($koneksi, $_POST['f_nama_kegiatan'] ?? '');
+    $nomor_surat   = mysqli_real_escape_string($koneksi, $_POST['f_nomor'] ?? '');
+    $sifat         = mysqli_real_escape_string($koneksi, $_POST['f_sifat'] ?? '');
+    $lampiran      = mysqli_real_escape_string($koneksi, $_POST['f_lampiran'] ?? '');
+    $perihal       = mysqli_real_escape_string($koneksi, $_POST['f_hal'] ?? '');
+    $tanggal_surat = mysqli_real_escape_string($koneksi, $_POST['f_tglsurat'] ?? '');
+    $kepada        = mysqli_real_escape_string($koneksi, $_POST['f_kepada'] ?? '');
+    $isi_undangan  = mysqli_real_escape_string($koneksi, $_POST['f_isi'] ?? '');
+    $hari_tanggal  = mysqli_real_escape_string($koneksi, $_POST['f_hari'] ?? '');
+    $waktu_acara   = mysqli_real_escape_string($koneksi, $_POST['f_waktu'] ?? '');
+    $tempat_acara  = mysqli_real_escape_string($koneksi, $_POST['f_tempat'] ?? '');
+    $agenda        = mysqli_real_escape_string($koneksi, $_POST['f_agenda'] ?? '');
+    $id_pejabat    = isset($pejabat['id']) ? $pejabat['id'] : 'NULL';
+
+    $sql_insert = "INSERT INTO undangan 
+    (nama_kegiatan, nomor_surat, sifat, lampiran, perihal, tanggal_surat, kepada, isi_undangan, hari_tanggal_acara, waktu_acara, tempat_acara, agenda, id_pejabat) 
+    VALUES 
+    ('$nama_kegiatan', '$nomor_surat', '$sifat', '$lampiran', '$perihal', '$tanggal_surat', '$kepada', '$isi_undangan', '$hari_tanggal', '$waktu_acara', '$tempat_acara', '$agenda', $id_pejabat)";
+
+    if (mysqli_query($koneksi, $sql_insert)) {
+        $msg_success = "Data undangan berhasil disimpan ke database!";
+    } else {
+        $msg_error = "Gagal menyimpan: " . mysqli_error($koneksi);
+    }
+}
+
 /* ================= DATA DEFAULT ================= */
 $nomor    = $_POST['f_nomor']    ?? ($nomor ?? 'B-32766/32766/BPS/2024');
 $sifat    = $_POST['f_sifat']    ?? ($sifat ?? 'Biasa');
@@ -432,6 +470,7 @@ function formatWaktu($w)
                 <li><a href="index.php?page=notulensi"><i class="fas fa-file-alt"></i> Notulensi</a></li>
                 <li><a href="index.php?page=absensi"><i class="fas fa-user-check"></i> Absensi</a></li>
                 <li><a href="index.php?page=arsip"><i class="fas fa-archive"></i> Arsip</a></li>
+                <li style="position: absolute; bottom: 0px; right: 0px; left: 0px;"><a href="index.php?page=logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </div>
 
@@ -440,6 +479,18 @@ function formatWaktu($w)
             <div class="form-container">
                 <form id="formUndangan" method="post">
                     <h3 class="card-head">Buat Undangan</h3>
+
+                    <?php if (!empty($msg_success)): ?>
+                        <div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
+                            <?= $msg_success ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($msg_error)): ?>
+                        <div style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
+                            <?= $msg_error ?>
+                        </div>
+                    <?php endif; ?>
 
                     <label>Nama Kegiatan Rapat</label>
                     <input name="f_nama_kegiatan" value="<?= htmlspecialchars($nama_kegiatan ?? '') ?>" placeholder="Contoh: Pembinaan Desa Cantik 2026" required>
@@ -586,7 +637,9 @@ function formatWaktu($w)
                             <td style="width: 45%; text-align: left; vertical-align: top; position: relative;">
 
                                 <div style="position: absolute; top: -90px; left: -130px; z-index: 1;">
-                                    <img src="pdf/ttd1.png" style="width: 300px; opacity: 0.8;">
+                                    <?php if (!empty($pejabat['file_stempel_ttd'])): ?>
+                                        <img src="pdf/<?= htmlspecialchars($pejabat['file_stempel_ttd']) ?>" style="width: 300px; opacity: 0.8;">
+                                    <?php endif; ?>
                                 </div>
 
                                 <div style="position: relative; z-index: 2;">
@@ -597,7 +650,7 @@ function formatWaktu($w)
                                 <div style="height: 75px;"></div>
 
                                 <div style="position: relative; z-index: 2;">
-                                    <p style="margin: 0; padding: 0;"><strong>Agus Marzuki Prihantoro</strong></p>
+                                    <p style="margin: 0; padding: 0;"><strong><?= htmlspecialchars($pejabat['nama_kepala'] ?? 'Agus Marzuki Prihantoro') ?></strong></p>
                                 </div>
 
                             </td>

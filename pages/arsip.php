@@ -11,14 +11,19 @@ if (!is_dir($arsip_dir)) {
 }
 
 // Helper untuk format pesan alert
-function set_alert($msg, $type) {
+function set_alert($msg, $type)
+{
     echo "<script>window.onload = function() { showNotification('" . addslashes($msg) . "', '$type'); };</script>";
 }
 
 // Handle form submit untuk membuat folder baru & Upload File Sekaligus
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['create_folder'])) {
+
+    // Include Database Connection
+    require_once __DIR__ . '/../koneksi.php';
+
     $folder_name = trim($_POST['folder_name']);
-    
+
     if (!empty($folder_name)) {
         $date = date('Y-m-d');
         // Sanitasi nama folder
@@ -37,6 +42,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['create_folder'])) {
                 $upload_errors = [];
                 $uploaded_count = 0;
 
+                // Track paths for Database
+                $db_undangan = NULL;
+                $db_notulensi = NULL;
+                $db_absensi = NULL;
+
                 $file_types = ['file_undangan' => 'undangan', 'file_notulensi' => 'notulensi', 'file_absensi' => 'absensi'];
 
                 foreach ($file_types as $input_name => $target_sub) {
@@ -44,14 +54,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['create_folder'])) {
                         $tmp_name = $_FILES[$input_name]['tmp_name'];
                         $original_name = $_FILES[$input_name]['name'];
                         $target_file = $folder_path . $target_sub . '/' . basename($original_name);
-                        
+
                         // Upload
                         if (move_uploaded_file($tmp_name, $target_file)) {
                             $uploaded_count++;
+
+                            // Map to DB variables
+                            if ($target_sub === 'undangan') $db_undangan = $target_file;
+                            if ($target_sub === 'notulensi') $db_notulensi = $target_file;
+                            if ($target_sub === 'absensi') $db_absensi = $target_file;
                         } else {
                             $upload_errors[] = "Gagal upload $target_sub";
                         }
                     }
+                }
+
+                // 3. Masukkan ke Database arsip_manual
+                if ($koneksi) {
+                    $nm = mysqli_real_escape_string($koneksi, $folder_name);
+                    $qu = mysqli_real_escape_string($koneksi, $db_undangan ?? '');
+                    $qn = mysqli_real_escape_string($koneksi, $db_notulensi ?? '');
+                    $qa = mysqli_real_escape_string($koneksi, $db_absensi ?? '');
+
+                    // Handle NULLs for SQL
+                    $qu = $qu ? "'$qu'" : "NULL";
+                    $qn = $qn ? "'$qn'" : "NULL";
+                    $qa = $qa ? "'$qa'" : "NULL";
+
+                    $sql = "INSERT INTO arsip_manual (nama_kegiatan, file_undangan, file_notulensi, file_absensi) 
+                            VALUES ('$nm', $qu, $qn, $qa)";
+                    mysqli_query($koneksi, $sql);
                 }
 
                 $msg = 'Arsip "' . htmlspecialchars($folder_name) . '" berhasil dibuat!';
@@ -61,9 +93,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['create_folder'])) {
                 if (!empty($upload_errors)) {
                     $msg .= ". Warning: " . implode(", ", $upload_errors);
                 }
-                
-                set_alert($msg, 'success');
 
+                set_alert($msg, 'success');
             } else {
                 set_alert('Gagal membuat direktori sistem.', 'error');
             }
@@ -84,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_folder'])) {
         $new_folder = $date_part . '_' . preg_replace('/[^A-Za-z0-9\-_]/', '_', $new_name);
         if ($old_folder !== $new_folder) {
             if (!is_dir($arsip_dir . $new_folder)) {
-                if(rename($arsip_dir . $old_folder, $arsip_dir . $new_folder)) {
+                if (rename($arsip_dir . $old_folder, $arsip_dir . $new_folder)) {
                     set_alert('Nama arsip berhasil diubah!', 'success');
                 } else {
                     set_alert('Gagal mengubah nama folder.', 'error');
@@ -101,7 +132,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_folder'])) {
     $folder_to_delete = $_POST['delete_folder'];
     if (is_dir($arsip_dir . $folder_to_delete)) {
         // Recursive Delete
-        function delete_folder_recursive($dir) {
+        function delete_folder_recursive($dir)
+        {
             if (!is_dir($dir)) return false;
             $files = array_diff(scandir($dir), ['.', '..']);
             foreach ($files as $file) {
@@ -122,14 +154,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_folder'])) {
 }
 
 // Fungsi Helper untuk cek isi folder (untuk indikator UI)
-function has_files($dir) {
-    if(!is_dir($dir)) return false;
+function has_files($dir)
+{
+    if (!is_dir($dir)) return false;
     $scan = array_diff(scandir($dir), ['.', '..']);
     return count($scan) > 0;
 }
 
 // Get Folders
-function get_folders($dir) {
+function get_folders($dir)
+{
     $folders = [];
     if (is_dir($dir)) {
         $items = scandir($dir);
@@ -145,13 +179,14 @@ $folders = get_folders($arsip_dir);
 ?>
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <title>Gudang Arsip - BPS Kota Depok</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-         /* ===== RESET ===== */
-         * {
+        /* ===== RESET ===== */
+        * {
             box-sizing: border-box;
             font-family: "Arial", serif;
         }
@@ -162,8 +197,8 @@ $folders = get_folders($arsip_dir);
             color: #0d47a1;
         }
 
-         /* ===== CONTAINER ===== */
-         .container {
+        /* ===== CONTAINER ===== */
+        .container {
             display: flex;
             min-height: 100vh;
         }
@@ -252,7 +287,8 @@ $folders = get_folders($arsip_dir);
             flex: 1;
             padding: 30px;
             overflow-y: auto;
-            margin-left: 140px; /* Lebar sidebar */
+            margin-left: 140px;
+            /* Lebar sidebar */
         }
 
 
@@ -264,7 +300,7 @@ $folders = get_folders($arsip_dir);
             background: white;
             padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
             margin-bottom: 30px;
         }
 
@@ -384,7 +420,7 @@ $folders = get_folders($arsip_dir);
             background: white;
             border-radius: 10px;
             padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             border-top: 4px solid #1976d2;
             transition: transform 0.2s;
             display: flex;
@@ -393,7 +429,7 @@ $folders = get_folders($arsip_dir);
 
         .archive-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
         }
 
         .ac-header {
@@ -420,7 +456,7 @@ $folders = get_folders($arsip_dir);
         .ac-actions button:hover {
             color: #d32f2f;
         }
-        
+
         .ac-actions button.edit-btn:hover {
             color: #1976d2;
         }
@@ -495,7 +531,7 @@ $folders = get_folders($arsip_dir);
             padding: 15px 25px;
             background: white;
             border-left: 5px solid #1976d2;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
             border-radius: 4px;
             display: none;
             z-index: 2000;
@@ -503,15 +539,27 @@ $folders = get_folders($arsip_dir);
         }
 
         @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
 
-        .notification.success { border-color: #2e7d32; }
-        .notification.error { border-color: #c62828; }
+        .notification.success {
+            border-color: #2e7d32;
+        }
 
+        .notification.error {
+            border-color: #c62828;
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <!-- SIDEBAR -->
@@ -523,6 +571,7 @@ $folders = get_folders($arsip_dir);
                 <li><a href="index.php?page=notulensi"><i class="fas fa-file-alt"></i>Notulensi</a></li>
                 <li><a href="index.php?page=absensi"><i class="fas fa-user-check"></i>Absensi</a></li>
                 <li><a href="index.php?page=arsip" class="active"><i class="fas fa-archive"></i>Arsip</a></li>
+                <li style="position: absolute; bottom: 0px; right: 0px; left: 0px;"><a href="index.php?page=logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </div>
 
@@ -535,7 +584,7 @@ $folders = get_folders($arsip_dir);
                 <div class="card-head">
                     <h3>Buat Arsip Baru</h3>
                 </div>
-                
+
                 <form method="post" enctype="multipart/form-data">
                     <div class="form-group">
                         <label class="form-label">Nama Kegiatan / Rapat</label>
@@ -588,15 +637,15 @@ $folders = get_folders($arsip_dir);
                     $date = $parts[0];
                     $name = isset($parts[1]) ? str_replace('_', ' ', $parts[1]) : 'Unnamed';
                     $path = $arsip_dir . $folder . '/';
-                    
+
                     $has_undangan = has_files($path . 'undangan');
                     $has_notulensi = has_files($path . 'notulensi');
                     $has_absensi = has_files($path . 'absensi');
-                    
+
                     // Check for JSON Data
                     $json_undangan = file_exists($path . 'undangan.json');
                     ?>
-                    
+
                     <div class="archive-card">
                         <div class="ac-header">
                             <i class="fas fa-folder ac-icon"></i>
@@ -646,7 +695,7 @@ $folders = get_folders($arsip_dir);
 
     <script>
         function updateFileName(input) {
-            if(input.files && input.files[0]) {
+            if (input.files && input.files[0]) {
                 const span = input.closest('label').querySelector('.file-status');
                 span.innerText = "Terpilih: " + input.files[0].name;
                 span.style.color = '#1976d2';
@@ -673,4 +722,5 @@ $folders = get_folders($arsip_dir);
         }
     </script>
 </body>
+
 </html>

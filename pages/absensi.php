@@ -114,7 +114,8 @@ session_start();
         .main-content {
             flex: 1;
             padding: 30px;
-            margin-left: 140px; /* Adjusted to match sidebar width */
+            margin-left: 140px;
+            /* Adjusted to match sidebar width */
             overflow-y: auto;
         }
 
@@ -127,7 +128,7 @@ session_start();
             overflow: hidden;
             margin-bottom: 30px;
         }
-        
+
         .card-head {
             text-align: center;
             padding: 20px;
@@ -150,7 +151,7 @@ session_start();
             border-radius: 10px;
             font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             transition: .15s;
             font-size: 14px;
             color: #fff;
@@ -160,7 +161,7 @@ session_start();
 
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
         }
 
         .btn-primary {
@@ -203,20 +204,35 @@ session_start();
         .landscape-img {
             max-width: 100%;
             height: auto;
-            max-height: 80vh; /* Prevent it from being too tall */
+            max-height: 80vh;
+            /* Prevent it from being too tall */
             border-radius: 4px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         @media (max-width: 768px) {
-            .container { flex-direction: column; }
-            .sidebar { width: 100%; height: auto; position: relative; }
-            .main-content { margin-left: 0; }
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
         }
 
         /* PRINT STYLE */
         @media print {
-            .sidebar, .btn, .upload-area, .card-head {
+
+            .sidebar,
+            .btn,
+            .upload-area,
+            .card-head {
                 display: none !important;
             }
 
@@ -238,7 +254,7 @@ session_start();
             .card-body {
                 padding: 0;
             }
-            
+
             #previewContainer {
                 display: block !important;
                 margin-top: 0 !important;
@@ -264,12 +280,13 @@ session_start();
                 <li><a href="index.php?page=notulensi"><i class="fas fa-file-alt"></i> Notulensi</a></li>
                 <li><a href="index.php?page=absensi" class="active"><i class="fas fa-user-check"></i> Absensi</a></li>
                 <li><a href="index.php?page=arsip"><i class="fas fa-archive"></i> Arsip</a></li>
+                <li style="position: absolute; bottom: 0px; right: 0px; left: 0px;"><a href="index.php?page=logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </div>
 
         <!-- MAIN CONTENT -->
         <div class="main-content">
-            
+
             <!-- SECTION 1: LINK -->
             <div class="card">
                 <div class="card-head">
@@ -285,34 +302,51 @@ session_start();
                 </div>
             </div>
 
-            <!-- SECTION 1: Draft daftar hadir -->
+            <!-- SECTION: TERAKHIR DIUPLOAD -->
+            <?php
+            // Fetch Latest Absensi from Database
+            require_once __DIR__ . '/../koneksi.php';
+            $query = "SELECT nama_kegiatan, tanggal_rapat, foto_absensi 
+                      FROM notulensi 
+                      WHERE foto_absensi IS NOT NULL AND foto_absensi != '[]' 
+                      ORDER BY created_at DESC 
+                      LIMIT 1";
+            $result = mysqli_query($koneksi, $query);
+            $row = mysqli_fetch_assoc($result);
+            $absensi_photos = [];
+            if ($row && !empty($row['foto_absensi'])) {
+                $absensi_photos = json_decode($row['foto_absensi'], true);
+            }
+            ?>
+
             <div class="card">
                 <div class="card-head">
-                    <h3>Draft Daftar Hadir</h3>
+                    <h3>Daftar Hadir Terakhir</h3>
+                    <?php if ($row): ?>
+                        <p style="margin:5px 0 0; font-size:14px; color:#64748b;">
+                            <?= htmlspecialchars($row['nama_kegiatan']) ?>
+                            (<?= date('d-m-Y', strtotime($row['tanggal_rapat'])) ?>)
+                        </p>
+                    <?php endif; ?>
                 </div>
                 <div class="card-body" style="text-align: center;">
-                    <?php if (!empty($_SESSION['notulensi']['absensi'])): ?>
-                        <p style="color: var(--muted); margin-bottom: 20px;">
-                            Berikut adalah draft daftar hadir yang tersimpan dari Notulensi terakhir:
-                        </p>
+                    <?php if (!empty($absensi_photos)): ?>
                         <div style="display: flex; flex-direction: column; gap: 20px; align-items: center;">
-                            <?php foreach ($_SESSION['notulensi']['absensi'] as $img): ?>
-                                <?php if (file_exists(__DIR__ . '/../' . $img)): ?>
-                                    <div style="background: #fff; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                                        <img src="<?= $img ?>" style="max-width: 100%; height: auto; max-height: 400px; border-radius: 4px;">
-                                    </div>
-                                <?php endif; ?>
+                            <?php foreach ($absensi_photos as $img): ?>
+                                <div style="background: #fff; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                    <img src="<?= htmlspecialchars($img) ?>" style="max-width: 100%; height: auto; max-height: 400px; border-radius: 4px;">
+                                </div>
                             <?php endforeach; ?>
                         </div>
                     <?php else: ?>
                         <p style="color: var(--muted); font-style: italic;">
-                            Belum ada draft daftar hadir yang disimpan dari halaman Notulensi.
+                            Belum ada data absensi yang tersimpan di database.
                         </p>
                     <?php endif; ?>
                 </div>
             </div>
 
-            
+
 
         </div>
     </div>
@@ -334,4 +368,5 @@ session_start();
         }
     </script>
 </body>
+
 </html>

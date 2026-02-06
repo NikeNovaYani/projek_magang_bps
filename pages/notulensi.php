@@ -747,6 +747,7 @@ if ($is_print) {
                 <li><a href="index.php?page=notulensi" class="active"><i class="fas fa-file-alt"></i> Notulensi</a></li>
                 <li><a href="index.php?page=absensi"><i class="fas fa-user-check"></i> Absensi</a></li>
                 <li><a href="index.php?page=arsip"><i class="fas fa-archive"></i> Arsip</a></li>
+                <li style="position: absolute; bottom: 0px; right: 0px; left: 0px;"><a href="index.php?page=logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </div>
         <div class="main-content">

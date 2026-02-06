@@ -1,10 +1,15 @@
 <?php
+
 /**
  * File: printundangan.php
  * Deskripsi: Menghasilkan PDF berdasarkan data yang dikirim dari form undangan.php
  */
 
 require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/koneksi.php';
+
+$query_pejabat = mysqli_query($koneksi, "SELECT * FROM pejabat LIMIT 1");
+$pejabat = mysqli_fetch_assoc($query_pejabat);
 
 // 1. Tangkap data dari POST (jika dipanggil via form) atau GET (jika default)
 // Catatan: Agar data dari form terkirim, form di undangan.php harus diarahkan ke sini
@@ -20,23 +25,26 @@ $tempat   = $_POST['f_tempat']   ?? 'Ruang Rapat BPS Kota Depok';
 $agenda   = $_POST['f_agenda']   ?? 'Pembahasan Optimalisasi Anggaran';
 
 /* ================= FUNGSI FORMATTING (Sama dengan di undangan.php) ================= */
-function formatTanggal($date) {
-    $bulan = ['01'=>'Januari','02'=>'Februari','03'=>'Maret','04'=>'April','05'=>'Mei','06'=>'Juni','07'=>'Juli','08'=>'Agustus','09'=>'September','10'=>'Oktober','11'=>'November','12'=>'Desember'];
+function formatTanggal($date)
+{
+    $bulan = ['01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'];
     if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
-        [$y,$m,$d] = explode('-', $date);
+        [$y, $m, $d] = explode('-', $date);
         return "Depok, $d {$bulan[$m]} $y";
     }
     return $date;
 }
 
-function formatHariTanggal($date) {
-    $hari_list = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-    $bulan_list = ['01'=>'Januari','02'=>'Februari','03'=>'Maret','04'=>'April','05'=>'Mei','06'=>'Juni','07'=>'Juli','08'=>'Agustus','09'=>'September','10'=>'Oktober','11'=>'November','12'=>'Desember'];
+function formatHariTanggal($date)
+{
+    $hari_list = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    $bulan_list = ['01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'];
     $ts = strtotime($date);
-    return $hari_list[date('w',$ts)].', '.date('d',$ts).' '.$bulan_list[date('m',$ts)].' '.date('Y',$ts);
+    return $hari_list[date('w', $ts)] . ', ' . date('d', $ts) . ' ' . $bulan_list[date('m', $ts)] . ' ' . date('Y', $ts);
 }
 
-function formatWaktu($w) {
+function formatWaktu($w)
+{
     return 'pukul ' . str_replace(':', '.', $w) . ' WIB - Selesai';
 }
 
@@ -94,29 +102,29 @@ $html = '
         <tr>
             <td class="meta-left">
                 <table>
-                    <tr><td width="70">Nomor</td><td width="10">:</td><td>'. $nomor .'</td></tr>
-                    <tr><td>Sifat</td><td>:</td><td>'. $sifat .'</td></tr>
-                    <tr><td>Lampiran</td><td>:</td><td>'. $lampiran .'</td></tr>
-                    <tr><td>Hal</td><td>:</td><td><strong>'. $hal .'</strong></td></tr>
+                    <tr><td width="70">Nomor</td><td width="10">:</td><td>' . $nomor . '</td></tr>
+                    <tr><td>Sifat</td><td>:</td><td>' . $sifat . '</td></tr>
+                    <tr><td>Lampiran</td><td>:</td><td>' . $lampiran . '</td></tr>
+                    <tr><td>Hal</td><td>:</td><td><strong>' . $hal . '</strong></td></tr>
                 </table>
             </td>
             <td class="meta-right">
-                '. formatTanggal($tglsurat) .'
+                ' . formatTanggal($tglsurat) . '
             </td>
         </tr>
     </table>
 
     <!-- ISI SURAT -->
     <div class="content">
-        <p>Yth. '. nl2br(htmlspecialchars($kepada)) .'</p>
+        <p>Yth. ' . nl2br(htmlspecialchars($kepada)) . '</p>
         
         <p>Sehubungan dengan pelaksanaan kegiatan koordinasi, kami mengharapkan kehadiran Bapak/Ibu pada:</p>
 
         <table class="detail-table">
-            <tr><td width="100">Hari/Tanggal</td><td width="15">:</td><td>'. formatHariTanggal($hari) .'</td></tr>
-            <tr><td>Waktu</td><td>:</td><td>'. formatWaktu($waktu) .'</td></tr>
-            <tr><td>Tempat</td><td>:</td><td>'. $tempat .'</td></tr>
-            <tr><td>Agenda</td><td>:</td><td>'. $agenda .'</td></tr>
+            <tr><td width="100">Hari/Tanggal</td><td width="15">:</td><td>' . formatHariTanggal($hari) . '</td></tr>
+            <tr><td>Waktu</td><td>:</td><td>' . formatWaktu($waktu) . '</td></tr>
+            <tr><td>Tempat</td><td>:</td><td>' . $tempat . '</td></tr>
+            <tr><td>Agenda</td><td>:</td><td>' . $agenda . '</td></tr>
         </table>
 
         <p>Demikian kami sampaikan, atas perhatian dan kerjasamanya diucapkan terima kasih.</p>
@@ -126,7 +134,7 @@ $html = '
     <div class="ttd">
         <p>Kepala BPS Kota Depok,</p>
         <div class="ttd-space"></div>
-        <p><strong>Agus Marzuki Prihantoro</strong></p>
+        <p><strong>' . htmlspecialchars($pejabat['nama_kepala'] ?? 'Agus Marzuki Prihantoro') . '</strong></p>
     </div>
 
 </body>

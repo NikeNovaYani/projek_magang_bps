@@ -5,6 +5,12 @@ session_start();
 /* ================= AMBIL DATA ================= */
 $data = $_SESSION['undangan'] ?? [];
 
+// Ambil data pejabat dari Database
+require_once __DIR__ . '/../koneksi.php';
+$query_pejabat = mysqli_query($koneksi, "SELECT * FROM pejabat LIMIT 1");
+$pejabat = mysqli_fetch_assoc($query_pejabat);
+
+
 /* ================= KONFIGURASI MPDF ================= */
 // Kita tambahkan 'tempDir' agar mPDF punya akses tulis gambar sementara jika perlu
 $mpdf = new \Mpdf\Mpdf([

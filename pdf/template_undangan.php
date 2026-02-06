@@ -300,12 +300,14 @@ if (!function_exists('formatWaktu')) {
 
         <?php
         // 1. Ambil gambar dan ubah ke Base64 (Langkah ini wajib agar gambar tidak hilang)
-        $path = __DIR__ . '/ttd1.png'; // Pastikan file ttd1.png ada di folder yang sama
+        $ttd_file = $pejabat['file_stempel_ttd'] ?? 'ttd1.png';
+        $path = __DIR__ . '/' . $ttd_file; // Pastikan file gambar ada di folder yang sama (folder pdf)
+
         $base64 = '';
         if (file_exists($path)) {
             $type = pathinfo($path, PATHINFO_EXTENSION);
-            $data = file_get_contents($path);
-            $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+            $data_img = file_get_contents($path);
+            $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data_img);
         }
         ?>
 
@@ -318,17 +320,18 @@ if (!function_exists('formatWaktu')) {
                     <p style="margin: 0; padding: 0; line-height: 1.2;">Kota Depok,</p>
 
                     <div style="height: 0px; overflow: visible; position: relative; z-index: -1;">
-                        <img src="<?= $base64 ?>"
-                            style="width: 270px; height: auto; opacity: 0.8; margin-top: -110px; 
-                                    margin-left: -120px; margin-bottom: -70px;">
+                        <?php if ($base64): ?>
+                            <img src="<?= $base64 ?>"
+                                style="width: 270px; height: auto; opacity: 0.8; margin-top: -110px; 
+                                        margin-left: -120px; margin-bottom: -70px;">
+                        <?php endif; ?>
                     </div>
 
                     <div style="height: 20px;"></div>
 
                     <p style="margin: 0; padding: 0; position: relative; z-index: 2;">
-                        <strong>Agus Marzuki Prihantoro</strong>
+                        <strong><?= htmlspecialchars($pejabat['nama_kepala'] ?? 'Agus Marzuki Prihantoro') ?></strong>
                     </p>
-
                 </td>
             </tr>
         </table>
