@@ -14,4 +14,3 @@ if (!$koneksi) {
 
 // Opsional: Set timezone ke WIB
 date_default_timezone_set('Asia/Jakarta');
-?>

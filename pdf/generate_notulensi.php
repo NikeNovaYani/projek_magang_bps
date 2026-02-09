@@ -4,8 +4,67 @@ require_once __DIR__ . '/../vendor/autoload.php';
 file_put_contents(__DIR__ . '/../failsafe_debug.txt', "Hit generate_notulensi.php at " . date('Y-m-d H:i:s') . "\n", FILE_APPEND);
 session_start();
 
+/* ================= HELPER ================= */
+if (!function_exists('formatTanggalIndo')) {
+    function formatTanggalIndo($date)
+    {
+        if (!$date) return '';
+        $bulan = [
+            'January' => 'Januari',
+            'February' => 'Februari',
+            'March' => 'Maret',
+            'April' => 'April',
+            'May' => 'Mei',
+            'June' => 'Juni',
+            'July' => 'Juli',
+            'August' => 'Agustus',
+            'September' => 'September',
+            'October' => 'Oktober',
+            'November' => 'November',
+            'December' => 'Desember'
+        ];
+        $ts = strtotime($date);
+        return date('d', $ts) . ' ' . $bulan[date('F', $ts)] . ' ' . date('Y', $ts);
+    }
+}
+
 /* ================= AMBIL DATA ================= */
-$data = $_SESSION['notulensi'] ?? [];
+// 1. Cek apakah ada ID di URL
+$id_notulensi = $_GET['id'] ?? 0;
+
+if ($id_notulensi > 0) {
+    // Ambil dari Database
+    require_once __DIR__ . '/../koneksi.php';
+    $q = mysqli_query($koneksi, "SELECT * FROM notulensi WHERE id_n = '$id_notulensi'");
+    if ($row = mysqli_fetch_assoc($q)) {
+        // Map DB columns to Template Variables
+        $data = [
+            'unit_kerja'    => $row['unit_kerja'],
+            'tanggal_raw'   => $_GET['tgl'] ?? $row['tanggal_rapat'], // [BARU] Untuk nama folder
+            'tanggal_fmt'   => formatTanggalIndo($_GET['tgl'] ?? $row['tanggal_rapat']), // Helper needed
+            'pimpinan'      => $row['pimpinan_rapat'],
+            'pukul_mulai'   => $row['waktu_mulai'],
+            'pukul_selesai' => $row['waktu_selesai'],
+            'topik'         => $row['nama_kegiatan'], // or topik
+            'tempat'        => $row['tempat'],
+            'lampiran'      => $row['lampiran_ket'],
+            'peserta'       => $row['peserta'],
+            'agenda'        => $row['agenda'],
+            'pembukaan'     => $row['isi_pembukaan'],
+            'pembahasan'    => $row['isi_pembahasan'],
+            'kesimpulan'    => $row['isi_kesimpulan'],
+            // TTD
+            'p_tempat'      => $row['tempat_pembuatan'],
+            'p_tanggal'     => formatTanggalIndo($row['tanggal_pembuatan']),
+            'p_notulis'     => $row['nama_notulis']
+        ];
+    } else {
+        die("Data Notulensi tidak ditemukan.");
+    }
+} else {
+    // 2. Fallback ke Session (Preview sebelum simpan)
+    $data = $_SESSION['notulensi'] ?? [];
+}
 
 /* ================= MPDF ================= */
 $mpdf = new \Mpdf\Mpdf([
@@ -32,7 +91,43 @@ try {
     // 1. Generate Binary Data (String)
     $pdfContent = $mpdf->Output('', 'S');
 
-    // 2. SAVE TO ARCHIVE IF REQUESTED
+    // 2. SAVE TO ARCHIVE AUTOMATICALLY (The Undangan Way)
+    if ($id_notulensi > 0) {
+        $clean_topik = isset($data['topik']) ? preg_replace('/[^A-Za-z0-9]/', '_', $data['topik']) : 'Rapat';
+        // Nama file: Notulensi_ID_NamaKegiatan.pdf
+        $nama_file_pdf = "Notulensi_" . $id_notulensi . "_" . $clean_topik . ".pdf";
+
+        // Ambil Data dari tabel UNDANGAN agar nama folder 100% sama dengan generate_undangan.php
+        $q_folder = mysqli_query($koneksi, "SELECT hari_tanggal_acara, nama_kegiatan FROM undangan WHERE id_u = '$id_notulensi'");
+        $row_folder = mysqli_fetch_assoc($q_folder);
+
+        $tgl_folder_db = $row_folder['hari_tanggal_acara'] ?? date('Y-m-d');
+        $nama_kegiatan_db = $row_folder['nama_kegiatan'] ?? 'Rapat';
+
+        // Nama Folder: YYYY-MM-DD_NamaKegiatan (Sesuai Undangan)
+        $clean_nama_folder = preg_replace('/[^A-Za-z0-9]/', '_', $nama_kegiatan_db);
+        $folder_name = $tgl_folder_db . '_' . $clean_nama_folder;
+
+        $path_folder = __DIR__ . '/../arsip_pdf/' . $folder_name;
+        $path_arsip_otomatis = $path_folder . '/' . $nama_file_pdf;
+
+        // Pastikan folder arsip_pdf ada
+        if (!is_dir($path_folder)) {
+            mkdir($path_folder, 0777, true);
+        }
+
+        // Simpan File
+        file_put_contents($path_arsip_otomatis, $pdfContent);
+
+        // Update Database dengan RELATIVE PATH
+        if (isset($koneksi)) {
+            $db_path = $folder_name . '/' . $nama_file_pdf;
+            $update_query = "UPDATE notulensi SET notulensi_pdf = '$db_path' WHERE id_n = '$id_notulensi'";
+            mysqli_query($koneksi, $update_query);
+        }
+    }
+
+    // 3. LOGIKA LAMA (Untuk Kompatibilitas Arsip Manual)
     if (isset($_GET['archive_folder']) && !empty($_GET['archive_folder'])) {
         $folder = preg_replace('/[^A-Za-z0-9\-_]/', '_', $_GET['archive_folder']);
         $savePath = __DIR__ . '/../arsip/' . $folder . '/notulensi/Notulensi_Rapat.pdf';
@@ -48,7 +143,7 @@ try {
         }
     }
 
-    // 3. OUTPUT TO BROWSER (Download/Inline)
+    // 4. OUTPUT TO BROWSER (Download/Inline)
     $dest = isset($_GET['download']) && $_GET['download'] === 'true' ? 'D' : 'I';
     $filename = 'Notulensi_Rapat.pdf';
 

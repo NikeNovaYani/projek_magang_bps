@@ -39,11 +39,51 @@ require_once __DIR__ . '/../koneksi.php';
 $query_pejabat = mysqli_query($koneksi, "SELECT * FROM pejabat LIMIT 1");
 $pejabat = mysqli_fetch_assoc($query_pejabat);
 
+// ========== EDIT MODE: LOAD DATA FROM DB ==========
+$id_undangan_edit = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$is_edit_mode = false;
+
+if ($id_undangan_edit > 0) {
+    $q_edit = mysqli_query($koneksi, "SELECT * FROM undangan WHERE id_u = '$id_undangan_edit'");
+    if ($row_edit = mysqli_fetch_assoc($q_edit)) {
+        $is_edit_mode = true;
+        // Override variables with DB data
+        $nama_kegiatan = $row_edit['nama_kegiatan'];
+        $nomor         = $row_edit['nomor_surat'];
+        $sifat         = $row_edit['sifat'];
+        $lampiran      = $row_edit['lampiran'];
+        $hal           = $row_edit['perihal'];
+        $tglsurat      = $row_edit['tanggal_surat'];
+        $kepada        = $row_edit['kepada'];
+        // $isi        = ??? (Isi tidak disimpan di DB saat ini, lihat save_undangan.php)
+        // Kita pakai default text jika isi tidak ada di DB (atau tambah kolom isi di DB nanti)
+        // Untuk sekarang pakai default atau logic parse dari PDF (sulit). 
+        // Best effort: Pakai default text, tapi user bisa edit kembali.
+
+        $hari     = $row_edit['hari_tanggal_acara'];
+
+        // Parse Waktu (09:00 s.d 12:00 WIB)
+        $waktu_raw = str_replace(' WIB', '', $row_edit['waktu_acara']);
+        $waktu_parts = explode(' s.d ', $waktu_raw);
+        $waktu_mulai_db = $waktu_parts[0] ?? '';
+        $waktu_selesai_db = $waktu_parts[1] ?? '';
+
+        // Note: Form Undangan pakai 1 field 'waktu', tapi save_undangan pakai mulai/selesai?
+        // Cek form: <input type="time" name="f_waktu"> -> Hanya satu (Jam Mulai).
+        $waktu    = $waktu_mulai_db;
+
+        $tempat   = $row_edit['tempat_acara'];
+        $agenda   = $row_edit['agenda'];
+    }
+}
+
 /* ================= SAVE TO DATABASE ================= */
 $msg_success = '';
 $msg_error = '';
 
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['f_nomor'])) { // Simple check to see if form is submitted
+    $id_u          = isset($_POST['id_u']) ? (int)$_POST['id_u'] : 0;
     $nama_kegiatan = mysqli_real_escape_string($koneksi, $_POST['f_nama_kegiatan'] ?? '');
     $nomor_surat   = mysqli_real_escape_string($koneksi, $_POST['f_nomor'] ?? '');
     $sifat         = mysqli_real_escape_string($koneksi, $_POST['f_sifat'] ?? '');
@@ -58,15 +98,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['f_nomor'])) { // Simp
     $agenda        = mysqli_real_escape_string($koneksi, $_POST['f_agenda'] ?? '');
     $id_pejabat    = isset($pejabat['id']) ? $pejabat['id'] : 'NULL';
 
-    $sql_insert = "INSERT INTO undangan 
-    (nama_kegiatan, nomor_surat, sifat, lampiran, perihal, tanggal_surat, kepada, isi_undangan, hari_tanggal_acara, waktu_acara, tempat_acara, agenda, id_pejabat) 
-    VALUES 
-    ('$nama_kegiatan', '$nomor_surat', '$sifat', '$lampiran', '$perihal', '$tanggal_surat', '$kepada', '$isi_undangan', '$hari_tanggal', '$waktu_acara', '$tempat_acara', '$agenda', $id_pejabat)";
+    if ($id_u > 0) {
+        // === UPDATE ===
+        $query = "UPDATE undangan SET 
+                  nama_kegiatan = '$nama_kegiatan',
+                  nomor_surat = '$nomor_surat',
+                  sifat = '$sifat',
+                  lampiran = '$lampiran',
+                  perihal = '$perihal',
+                  tanggal_surat = '$tanggal_surat',
+                  kepada = '$kepada',
+                  isi_undangan = '$isi_undangan',
+                  hari_tanggal_acara = '$hari_tanggal',
+                  waktu_acara = '$waktu_acara',
+                  tempat_acara = '$tempat_acara',
+                  agenda = '$agenda'
+                  WHERE id_u = '$id_u'";
 
-    if (mysqli_query($koneksi, $sql_insert)) {
-        $msg_success = "Data undangan berhasil disimpan ke database!";
+        if (mysqli_query($koneksi, $query)) {
+            $msg_success = "Data undangan berhasil diperbarui!";
+            // Refresh to ensure variables are updated
+            echo "<script>alert('$msg_success'); window.location.href='index.php?page=undangan&id=$id_u';</script>";
+            exit;
+        } else {
+            $msg_error = "Gagal memperbarui: " . mysqli_error($koneksi);
+        }
     } else {
-        $msg_error = "Gagal menyimpan: " . mysqli_error($koneksi);
+        // === INSERT ===
+        $sql_insert = "INSERT INTO undangan 
+        (nama_kegiatan, nomor_surat, sifat, lampiran, perihal, tanggal_surat, kepada, isi_undangan, hari_tanggal_acara, waktu_acara, tempat_acara, agenda, id_pejabat) 
+        VALUES 
+        ('$nama_kegiatan', '$nomor_surat', '$sifat', '$lampiran', '$perihal', '$tanggal_surat', '$kepada', '$isi_undangan', '$hari_tanggal', '$waktu_acara', '$tempat_acara', '$agenda', $id_pejabat)";
+
+        if (mysqli_query($koneksi, $sql_insert)) {
+            $msg_success = "Data undangan berhasil disimpan ke database!";
+            $new_id = mysqli_insert_id($koneksi);
+            // Redirect to Edit Mode
+            echo "<script>alert('$msg_success'); window.location.href='index.php?page=undangan&id=$new_id';</script>";
+            exit;
+        } else {
+            $msg_error = "Gagal menyimpan: " . mysqli_error($koneksi);
+        }
     }
 }
 
@@ -478,7 +550,8 @@ function formatWaktu($w)
             <!-- FORM INPUT -->
             <div class="form-container">
                 <form id="formUndangan" method="post">
-                    <h3 class="card-head">Buat Undangan</h3>
+                    <input type="hidden" name="id_u" value="<?= $id_undangan_edit ?>"> <!-- ID untuk Edit Mode -->
+                    <h3 class="card-head"><?= $is_edit_mode ? 'Edit Undangan' : 'Buat Undangan' ?></h3>
 
                     <?php if (!empty($msg_success)): ?>
                         <div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
@@ -671,55 +744,86 @@ function formatWaktu($w)
         const form = document.getElementById('formUndangan');
 
         function submitNormal() {
+            // Validasi Field Nama Kegiatan
+            const namaKegiatan = form.querySelector('[name="f_nama_kegiatan"]').value.trim();
+            if (!namaKegiatan) {
+                // Tampilkan notifikasi di atas form
+                let notif = document.querySelector('.custom-alert');
+                if (!notif) {
+                    notif = document.createElement('div');
+                    notif.className = 'custom-alert';
+                    notif.style.cssText = 'background: #fff3cd; color: #856404; padding: 10px; border-radius: 4px; margin-bottom: 15px; border: 1px solid #ffeeba;';
+                    const container = document.querySelector('.form-container form');
+                    container.insertBefore(notif, container.children[2]); // Insert after h3 or messages
+                }
+                notif.innerHTML = '<strong>PERINGATAN:</strong> Harap isi "Nama Kegiatan Rapat" terlebih dahulu.';
+
+                // Scroll ke atas
+                document.querySelector('.form-container').scrollIntoView({
+                    behavior: 'smooth'
+                });
+                return;
+            }
+
             form.target = '_self';
             form.action = ''; // Kembali ke halaman ini sendiri
             form.submit();
         }
 
         function submitCetak() {
+            const form = document.querySelector('form'); // Pastikan selektor form benar
+
             // Validasi Field Nama Kegiatan
             const namaKegiatan = form.querySelector('[name="f_nama_kegiatan"]').value.trim();
             if (!namaKegiatan) {
-                alert('PERINGATAN: Harap isi "Nama Kegiatan Rapat" terlebih dahulu sebelum mencetak PDF agar arsip dapat dikelompokkan dengan benar.');
+                alert('PERINGATAN: Harap isi "Nama Kegiatan Rapat" terlebih dahulu.');
                 return;
             }
 
             const data = new FormData(form);
 
-            // Change button text to indicate loading
+            // Ubah tombol jadi Loading
             const btn = document.querySelector('.btn-print');
             const originalText = btn.innerText;
             btn.innerText = 'Menyimpan & Mengunduh...';
             btn.disabled = true;
 
-            // 1. Kirim data ke save_undangan.php?action=archive via AJAX
-            fetch('pages/save_undangan.php?action=archive', {
+            // 1. Kirim data ke save_undangan.php
+            fetch('pages/save_undangan.php', { // Hapus ?action=archive jika tidak perlu logika khusus
                     method: 'POST',
                     body: data
                 })
                 .then(response => response.text())
                 .then(result => {
-                    // Jika sukses, result akan berisi Nama Folder (misal: 2024-02-04_Kegiatan)
-                    // Kita anggap sukses jika tidak kosong dan tidak ada error PHP fatal (bisa divalidasi lebih lanjut)
-                    const folderName = result.trim();
+                    // result sekarang berisi ID Undangan (misal: "15")
+                    let idUndangan = result.trim();
 
-                    if (folderName && !folderName.includes('<br') && !folderName.includes('Error')) {
-                        // 2. Sukses Simpan -> Trigger Download Silent via Iframe + Auto Save to Archive folder
+                    // Cek apakah result benar-benar angka (ID Valid)
+                    if (!isNaN(idUndangan) && idUndangan > 0) {
+
+                        // 2. Sukses Simpan -> Trigger Download via Iframe menggunakan ID
                         const iframe = document.createElement('iframe');
                         iframe.style.display = 'none';
-                        // Pass folder name to generator
-                        iframe.src = 'pdf/generate_undangan.php?download=true&archive_folder=' + encodeURIComponent(folderName);
+
+                        // PERUBAHAN UTAMA DI SINI:
+                        // Kita kirim parameter ?id=... bukan archive_folder
+                        iframe.src = 'pdf/generate_undangan.php?download=true&id=' + idUndangan;
+
                         document.body.appendChild(iframe);
 
-                        // Show notification
+                        // Notifikasi Sukses
                         setTimeout(() => {
-                            alert('Undangan berhasil diarsipkan dan PDF diunduh!');
+                            // alert('Undangan berhasil disimpan dan PDF sedang diunduh.');
                             btn.innerText = originalText;
                             btn.disabled = false;
-                        }, 1000);
+
+                            // Opsional: Redirect ke halaman list undangan setelah cetak
+                            // window.location.href = 'index.php?page=undangan'; 
+                        }, 2000);
 
                     } else {
-                        alert('Gagal menyimpan data arsip. Response: ' + result);
+                        // Jika return bukan angka (berarti error PHP)
+                        alert('Gagal menyimpan data. Error: ' + result);
                         console.log(result);
                         btn.innerText = originalText;
                         btn.disabled = false;
@@ -727,7 +831,7 @@ function formatWaktu($w)
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Terjadi kesalahan sistem.');
+                    alert('Terjadi kesalahan sistem saat menghubungi server.');
                     btn.innerText = originalText;
                     btn.disabled = false;
                 });

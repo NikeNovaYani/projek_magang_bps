@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once '../koneksi.php'; // Wajib ada koneksi database
 
 // 1. Cek Metode Request
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -7,81 +8,77 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// 2. Ambil Data (Mapping dari nama input 'f_...' ke nama array session yang bersih)
-$data = [
-    'nomor'         => $_POST['f_nomor'] ?? '',
-    'hal'           => $_POST['f_hal'] ?? '',
-    'kepada'        => $_POST['f_kepada'] ?? '',
-    'tanggal'       => $_POST['f_tglsurat'] ?? date('Y-m-d'),
+// 2. Ambil Data dari Form
+// (Pastikan 'name' di input HTML sesuai dengan $_POST di sini)
+$id_u           = $_POST['id_u'] ?? 0; // ID hidden jika mode edit
+$nama_kegiatan  = mysqli_real_escape_string($koneksi, $_POST['f_nama_kegiatan'] ?? '');
+$nomor_surat    = mysqli_real_escape_string($koneksi, $_POST['f_nomor'] ?? '');
+$perihal        = mysqli_real_escape_string($koneksi, $_POST['f_hal'] ?? ''); // Di DB namanya 'perihal'
+$kepada         = mysqli_real_escape_string($koneksi, $_POST['f_kepada'] ?? '');
+$tanggal_surat  = $_POST['f_tglsurat'] ?? date('Y-m-d');
 
-    // Data Acara (Pastikan nanti form inputnya punya nama-nama ini)
-    'hari_tanggal'  => $_POST['f_hari'] ?? date('Y-m-d'),
-    'pukul_mulai'   => $_POST['f_mulai'] ?? '09:00',
-    'pukul_selesai' => $_POST['f_selesai'] ?? 'Selesai',
-    'tempat'        => $_POST['f_tempat'] ?? '',
-    'agenda'        => $_POST['f_agenda'] ?? '',
-    'pimpinan'      => $_POST['f_pimpinan'] ?? ''
+// Data Acara
+$hari_tanggal   = $_POST['f_hari'] ?? date('Y-m-d');
+$waktu_mulai    = $_POST['f_mulai'] ?? '09:00';
+$waktu_selesai  = $_POST['f_selesai'] ?? 'Selesai';
+$waktu_acara    = $waktu_mulai . ' s.d ' . $waktu_selesai . ' WIB'; // Gabung biar rapi di DB
+$tempat         = mysqli_real_escape_string($koneksi, $_POST['f_tempat'] ?? '');
+$agenda         = mysqli_real_escape_string($koneksi, $_POST['f_agenda'] ?? '');
+
+// Data Tambahan (Session untuk preview PDF jika perlu)
+$_SESSION['undangan'] = [
+    'nomor' => $nomor_surat,
+    'hal' => $perihal,
+    'kepada' => $kepada,
+    'tanggal' => $tanggal_surat,
+    'hari_tanggal' => $hari_tanggal,
+    'pukul_mulai' => $waktu_mulai,
+    'pukul_selesai' => $waktu_selesai,
+    'tempat' => $tempat,
+    'agenda' => $agenda,
+    'nama_kegiatan' => $nama_kegiatan
 ];
 
-// 3. Simpan ke Session
-// 3. Simpan ke Session
-$_SESSION['undangan'] = $data;
+// 3. LOGIKA SIMPAN KE DATABASE (Tabel Undangan)
 
-// 4. Handle Archiving (bika action=archive)
-if (isset($_GET['action']) && $_GET['action'] === 'archive') {
-    $arsipDir = '../arsip/';
-
-    if (!is_dir($arsipDir)) mkdir($arsipDir, 0777, true);
-
-    // Format Folder: YYYY-MM-DD_NamaKegiatan
-    // Prioritaskan Nama Kegiatan dari Input Baru
-    $namaKegiatan = trim($_POST['f_nama_kegiatan'] ?? '');
-    if (empty($namaKegiatan)) {
-        // Fallback ke Hal jika kosong (untuk backward compatibility)
-        $namaKegiatan = trim($data['hal'] ?: 'Undangan_Baru');
-    }
-
-    $safeName = preg_replace('/[^A-Za-z0-9\-_]/', '_', $namaKegiatan);
-
-    // 1. Cek apakah folder dengan suffix nama kegiatan ini sudah ada (di tanggal berapapun)
-    // Tujuannya agar jika notulensi dibuat besoknya, tetap masuk folder yang sama
-    $existingFolder = null;
-    $folders = scandir($arsipDir);
-    foreach ($folders as $f) {
-        if ($f === '.' || $f === '..') continue;
-        // Cek pattern YYYY-MM-DD_NamaKegiatan
-        if (strpos($f, '_' . $safeName) !== false) {
-            $existingFolder = $f;
-            break;
-        }
-    }
-
-    if ($existingFolder) {
-        $folderName = $existingFolder;
-    } else {
-        $folderName = date('Y-m-d') . '_' . $safeName;
-    }
-
-    $targetDir = $arsipDir . $folderName . '/';
-
-    // Buat Struktur Folder
-    if (!is_dir($targetDir)) {
-        mkdir($targetDir, 0777, true);
-        // Buat subfolder standar arsip (agar kompatibel)
-        $subfolders = ['undangan', 'notulensi', 'absensi'];
-        foreach ($subfolders as $sub) {
-            mkdir($targetDir . $sub . '/', 0777, true);
-        }
-    }
-
-    // Simpan JSON Data
-    $jsonPath = $targetDir . 'undangan.json';
-    file_put_contents($jsonPath, json_encode($data, JSON_PRETTY_PRINT));
-
-    // Return Folder Name untuk dipakai generate PDF
-    echo $folderName;
-    exit;
+if ($id_u > 0) {
+    // === UPDATE DATA LAMA ===
+    $query = "UPDATE undangan SET 
+              nama_kegiatan = '$nama_kegiatan',
+              nomor_surat = '$nomor_surat',
+              perihal = '$perihal',
+              kepada = '$kepada',
+              tanggal_surat = '$tanggal_surat',
+              hari_tanggal_acara = '$hari_tanggal',
+              waktu_acara = '$waktu_acara',
+              tempat_acara = '$tempat',
+              agenda = '$agenda'
+              WHERE id_u = '$id_u'";
+} else {
+    // === INSERT DATA BARU ===
+    $query = "INSERT INTO undangan 
+              (nama_kegiatan, nomor_surat, perihal, kepada, tanggal_surat, 
+               hari_tanggal_acara, waktu_acara, tempat_acara, agenda, undangan_pdf)
+              VALUES 
+              ('$nama_kegiatan', '$nomor_surat', '$perihal', '$kepada', '$tanggal_surat', 
+               '$hari_tanggal', '$waktu_acara', '$tempat', '$agenda', NULL)"; 
+               // undangan_pdf diset NULL dulu, nanti diupdate oleh generate_undangan.php
 }
 
-// 5. Respon
-echo 'OK';
+// Eksekusi Query
+if (mysqli_query($koneksi, $query)) {
+    
+    // 4. Ambil ID Terbaru
+    if ($id_u > 0) {
+        $last_id = $id_u;
+    } else {
+        $last_id = mysqli_insert_id($koneksi);
+    }
+
+    // 5. PENTING: Kirim ID balik ke Javascript
+    echo $last_id; 
+
+} else {
+    echo "Error Database: " . mysqli_error($koneksi);
+}
+?>

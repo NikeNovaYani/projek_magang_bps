@@ -17,11 +17,13 @@ $bulan_indonesia = [
     'December' => 'Desember'
 ];
 
-function formatTanggalIndo($date)
-{
-    global $bulan_indonesia;
-    $ts = strtotime($date);
-    return date('d', $ts) . ' ' . $bulan_indonesia[date('F', $ts)] . ' ' . date('Y', $ts);
+if (!function_exists('formatTanggalIndo')) {
+    function formatTanggalIndo($date)
+    {
+        global $bulan_indonesia;
+        $ts = strtotime($date);
+        return date('d', $ts) . ' ' . $bulan_indonesia[date('F', $ts)] . ' ' . date('Y', $ts);
+    }
 }
 
 /* ================= AGENDA ================= */

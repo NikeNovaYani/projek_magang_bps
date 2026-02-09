@@ -2,6 +2,9 @@
 // arsip.php - Halaman Arsip Rapat
 $page = 'arsip';
 
+// Fix: Include database connection globally
+require_once __DIR__ . '/../koneksi.php';
+
 // Direktori arsip
 $arsip_dir = 'arsip/';
 
@@ -19,8 +22,7 @@ function set_alert($msg, $type)
 // Handle form submit untuk membuat folder baru & Upload File Sekaligus
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['create_folder'])) {
 
-    // Include Database Connection
-    require_once __DIR__ . '/../koneksi.php';
+
 
     $folder_name = trim($_POST['folder_name']);
 
@@ -150,6 +152,305 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_folder'])) {
         }
     } else {
         set_alert('Arsip tidak ditemukan!', 'error');
+    }
+}
+
+// === HANDLE REPLACE / UPLOAD FILE (MANUAL & AUTOMATIC) ===
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['replace_file'])) {
+    $id_referensi = $_POST['id_referensi'];
+    $file_type = $_POST['file_type']; // 'file_undangan', etc. or 'undangan'
+    $source = $_POST['source'] ?? 'manual'; // 'manual' or 'otomatis'
+
+    // Mapping normalized type
+    $type_norm = str_replace('file_', '', $file_type); // undangan, notulensi, absensi
+
+    if (!empty($id_referensi) && isset($_FILES['new_file']) && $_FILES['new_file']['error'] == 0) {
+        $tmp_name = $_FILES['new_file']['tmp_name'];
+        $original_name = $_FILES['new_file']['name'];
+        $ext = pathinfo($original_name, PATHINFO_EXTENSION);
+        $clean_name = preg_replace('/[^A-Za-z0-9\-_]/', '', pathinfo($original_name, PATHINFO_FILENAME));
+        $new_filename = time() . '_' . $clean_name . '.' . $ext;
+
+        if ($source == 'manual') {
+            // --- LOGIC MANUAL ---
+            $col_name = 'file_' . $type_norm; // file_undangan, file_notulensi...
+
+            // 1. Ambil path lama & folder info
+            $query_old = "SELECT * FROM arsip_manual WHERE id_am = '$id_referensi'";
+            $result_old = mysqli_query($koneksi, $query_old);
+            $data_old = mysqli_fetch_assoc($result_old);
+
+            if ($data_old) {
+                // Determine Target Directory
+                $target_dir = "";
+                $old_path = $data_old[$col_name];
+
+                // A. Use old path if exists
+                if (!empty($old_path)) {
+                    // Fix: Check if absolute or relative
+                    if (file_exists($old_path)) {
+                        $target_dir = dirname($old_path) . '/';
+                    } elseif (file_exists("arsip/" . $old_path)) { // Handle legacy relative stored as relative
+                        $target_dir = "arsip/" . dirname($old_path) . '/'; // Incorrect logic if path is just "file.pdf" inside folder. 
+                        // Better: just dirname of the full path
+                        $target_dir = dirname("arsip/" . $old_path) . '/'; // This is getting messy.
+                        // Let's stick to the previous reliable logic: find ANY sibling file.
+                    }
+                }
+
+                // B. Fallback: Find sibling files
+                if (empty($target_dir) || !is_dir($target_dir)) {
+                    $siblings = ['file_undangan', 'file_notulensi', 'file_absensi'];
+                    foreach ($siblings as $sib) {
+                        if (!empty($data_old[$sib]) && file_exists($data_old[$sib])) {
+                            $sibling_dir = dirname($data_old[$sib]);
+                            // Navigate to correct subfolder
+                            // Structure: .../undangan/file.pdf. Parent: .../
+                            // Desired: .../notulensi/
+                            $parent = dirname($sibling_dir);
+                            $target_dir = $parent . '/' . $type_norm . '/';
+                            if (!is_dir($target_dir)) mkdir($target_dir, 0777, true);
+                            break;
+                        }
+                    }
+                }
+
+                // C. Fallback: Scan folders (Last Resort)
+                if (empty($target_dir)) {
+                    $folders = scandir($arsip_dir);
+                    $sanitized_param = preg_replace('/[^A-Za-z0-9\-_]/', '_', $data_old['nama_kegiatan']);
+                    foreach ($folders as $fol) {
+                        if (strpos($fol, $sanitized_param) !== false) {
+                            $target_dir = $arsip_dir . $fol . '/' . $type_norm . '/';
+                            if (!is_dir($target_dir)) mkdir($target_dir, 0777, true);
+                            break;
+                        }
+                    }
+                }
+
+                if (!empty($target_dir) && is_dir($target_dir)) {
+                    $target_file = $target_dir . $new_filename;
+
+                    if (move_uploaded_file($tmp_name, $target_file)) {
+                        // DB Path (Relative prefer 'arsip/...')
+                        // Calc relative path
+                        $pos = strpos($target_file, 'arsip/');
+                        $db_path = ($pos !== false) ? substr($target_file, $pos) : $target_file;
+
+                        // Delete old
+                        if (!empty($old_path) && file_exists($old_path) && $old_path != $db_path) {
+                            unlink($old_path);
+                        }
+
+                        mysqli_query($koneksi, "UPDATE arsip_manual SET $col_name = '$db_path' WHERE id_am = '$id_referensi'");
+                        set_alert("File berhasil diupload/diganti!", 'success');
+                    } else {
+                        set_alert("Gagal move_uploaded_file.", 'error');
+                    }
+                } else {
+                    set_alert("Folder tujuan tidak ditemukan. Hubungi admin.", 'error');
+                }
+            }
+        } elseif ($source == 'otomatis') {
+            // --- LOGIC OTOMATIS ---
+            // Undangan -> table undangan (undangan_pdf) -> folder arsip_pdf/
+            // Notulensi -> table notulensi (notulensi_pdf) -> folder arsip_pdf/
+            // Absensi -> table notulensi (foto_absensi) -> folder uploads/absensi/ (JSON)
+
+            $uploaded = false;
+
+            if ($type_norm == 'undangan') {
+                $target_dir = "arsip_pdf/";
+                if (!is_dir($target_dir)) mkdir($target_dir, 0755, true);
+
+                $target_file = $target_dir . $new_filename;
+                if (move_uploaded_file($tmp_name, $target_file)) {
+                    // Update DB
+                    // Delete old file? Need query first.
+                    $q = mysqli_query($koneksi, "SELECT undangan_pdf FROM undangan WHERE id_u = '$id_referensi'");
+                    $d = mysqli_fetch_assoc($q);
+                    if ($d && !empty($d['undangan_pdf']) && file_exists($target_dir . $d['undangan_pdf'])) {
+                        unlink($target_dir . $d['undangan_pdf']);
+                    }
+
+                    mysqli_query($koneksi, "UPDATE undangan SET undangan_pdf = '$new_filename' WHERE id_u = '$id_referensi'");
+                    $uploaded = true;
+                }
+            } elseif ($type_norm == 'notulensi') {
+                $target_dir = "arsip_pdf/";
+                if (!is_dir($target_dir)) mkdir($target_dir, 0755, true);
+
+                $target_file = $target_dir . $new_filename;
+                if (move_uploaded_file($tmp_name, $target_file)) {
+                    // Delete old
+                    $q = mysqli_query($koneksi, "SELECT notulensi_pdf FROM notulensi WHERE id_n = '$id_referensi'"); // id_referensi for notulensi IS id_n/id_u typically
+                    // Wait, in loop: id_referensi = id_u.
+                    // And usually id_n = id_u.
+                    // But safe to assume id passed IS the correct ID for keys.
+                    $d = mysqli_fetch_assoc($q);
+                    if ($d && !empty($d['notulensi_pdf']) && file_exists($target_dir . $d['notulensi_pdf'])) {
+                        unlink($target_dir . $d['notulensi_pdf']);
+                    }
+
+                    mysqli_query($koneksi, "UPDATE notulensi SET notulensi_pdf = '$new_filename' WHERE id_n = '$id_referensi'");
+                    $uploaded = true;
+                }
+            } elseif ($type_norm == 'absensi') {
+                $target_dir = "uploads/absensi/";
+                if (!is_dir($target_dir)) mkdir($target_dir, 0755, true);
+
+                $target_file = $target_dir . $new_filename;
+                if (move_uploaded_file($tmp_name, $target_file)) {
+                    // Handle JSON array
+                    // Check old
+                    $q = mysqli_query($koneksi, "SELECT foto_absensi FROM notulensi WHERE id_n = '$id_referensi'");
+                    $d = mysqli_fetch_assoc($q);
+                    $old_files = json_decode($d['foto_absensi'] ?? '[]', true);
+
+                    // Delete old files?
+                    // User request: "replace existing" or "upload empty".
+                    // If replacing, we might want to clear old ones or append? 
+                    // "jika file... dihapus... tombol buat atau upload... untuk mengisi file tersebut"
+                    // Implies filling the void. Converting to single file array is safest for "Restore".
+                    if (is_array($old_files)) {
+                        foreach ($old_files as $of) {
+                            if (file_exists($target_dir . $of)) unlink($target_dir . $of);
+                        }
+                    }
+
+                    $new_json = json_encode([$new_filename]);
+                    mysqli_query($koneksi, "UPDATE notulensi SET foto_absensi = '$new_json' WHERE id_n = '$id_referensi'");
+                    $uploaded = true;
+                }
+            }
+
+            if ($uploaded) {
+                set_alert("File Otomatis berhasil diupload!", 'success');
+            } else {
+                set_alert("Gagal upload file otomatis.", 'error');
+            }
+        }
+    } else {
+        set_alert("Input tidak valid atau file kosong.", 'error');
+    }
+}
+
+// === HANDLE DELETE AUTOMATIC ARCHIVE (FOLDER) ===
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['hapus_otomatis'])) {
+    $id = $_POST['id_hapus']; // id_u (sama dengan id_n)
+
+    if ($id > 0) {
+        // 1. Hapus File Undangan
+        $q_u = mysqli_query($koneksi, "SELECT undangan_pdf FROM undangan WHERE id_u = '$id'");
+        if ($d_u = mysqli_fetch_assoc($q_u)) {
+            if (!empty($d_u['undangan_pdf']) && file_exists("arsip_pdf/" . $d_u['undangan_pdf'])) {
+                unlink("arsip_pdf/" . $d_u['undangan_pdf']);
+            }
+        }
+
+        // 2. Hapus File Notulensi & Gambar
+        $q_n = mysqli_query($koneksi, "SELECT notulensi_pdf, foto_dokumentasi, foto_absensi FROM notulensi WHERE id_n = '$id'");
+        if ($d_n = mysqli_fetch_assoc($q_n)) {
+            // PDF
+            if (!empty($d_n['notulensi_pdf']) && file_exists("arsip_pdf/" . $d_n['notulensi_pdf'])) {
+                unlink("arsip_pdf/" . $d_n['notulensi_pdf']);
+            }
+            // Dokumentasi
+            $docs = json_decode($d_n['foto_dokumentasi'] ?? '[]', true);
+            foreach ($docs as $d) {
+                if (file_exists("uploads/dokumentasi/$d")) unlink("uploads/dokumentasi/$d");
+            }
+            // Absensi
+            $abs = json_decode($d_n['foto_absensi'] ?? '[]', true);
+            foreach ($abs as $a) {
+                if (file_exists("uploads/absensi/$a")) unlink("uploads/absensi/$a");
+            }
+        }
+
+        // 3. Delete Database Records
+        mysqli_query($koneksi, "DELETE FROM notulensi WHERE id_n = '$id'"); // Hapus anak dulu
+        if (mysqli_query($koneksi, "DELETE FROM undangan WHERE id_u = '$id'")) {
+            set_alert("Arsip (Notulensi/Undangan) berhasil dihapus permanen.", 'success');
+        } else {
+            set_alert("Gagal menghapus data: " . mysqli_error($koneksi), 'error');
+        }
+    }
+}
+
+// === HANDLE DELETE INDIVIDUAL FILE (MANUAL & AUTOMATIC) ===
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['hapus_file_item'])) {
+    $id = $_POST['id_ref'];
+    $type = $_POST['file_type']; // undangan, notulensi, absensi
+    $source = $_POST['source'];   // manual, otomatis
+
+    if ($source == 'manual') {
+        // --- MANUAL ---
+        $col = ($type == 'undangan') ? 'file_undangan' : (($type == 'notulensi') ? 'file_notulensi' : 'file_absensi');
+
+        $q = mysqli_query($koneksi, "SELECT * FROM arsip_manual WHERE id_am = '$id'");
+        if ($row = mysqli_fetch_assoc($q)) {
+            $path = $row[$col];
+            if (!empty($path) && file_exists($path)) {
+                unlink($path);
+            }
+            // Update DB -> NULL
+            mysqli_query($koneksi, "UPDATE arsip_manual SET $col = NULL WHERE id_am = '$id'");
+            set_alert("File $type berhasil dihapus.", 'success');
+        }
+    } else {
+        // --- OTOMATIS ---
+        if ($type == 'undangan') {
+            // 1. Cek & Hapus File Fisik
+            $q = mysqli_query($koneksi, "SELECT undangan_pdf FROM undangan WHERE id_u = '$id'");
+            if ($row = mysqli_fetch_assoc($q)) {
+                if (!empty($row['undangan_pdf']) && file_exists("arsip_pdf/" . $row['undangan_pdf'])) {
+                    unlink("arsip_pdf/" . $row['undangan_pdf']);
+                }
+            }
+            // 2. Update Database (Pastikan terset NULL/kosong)
+            // Gunakan NULL unquoted agar benar-benar NULL di MySQL
+            $update = mysqli_query($koneksi, "UPDATE undangan SET undangan_pdf = NULL WHERE id_u = '$id'");
+
+            if ($update) {
+                set_alert("File Undangan berhasil dihapus.", 'success');
+            } else {
+                set_alert("Gagal update database: " . mysqli_error($koneksi), 'error');
+            }
+        } elseif ($type == 'notulensi') {
+            // 1. Cek & Hapus File Fisik
+            $q = mysqli_query($koneksi, "SELECT notulensi_pdf FROM notulensi WHERE id_n = '$id'");
+            if ($row = mysqli_fetch_assoc($q)) {
+                if (!empty($row['notulensi_pdf']) && file_exists("arsip_pdf/" . $row['notulensi_pdf'])) {
+                    unlink("arsip_pdf/" . $row['notulensi_pdf']);
+                }
+            }
+            // 2. Update Database
+            // Note: id_n harus match id_u dari undangan
+            $update = mysqli_query($koneksi, "UPDATE notulensi SET notulensi_pdf = NULL WHERE id_n = '$id'");
+
+            if ($update) {
+                set_alert("File Notulensi berhasil dihapus.", 'success');
+            } else {
+                set_alert("Gagal update database notulensi: " . mysqli_error($koneksi), 'error');
+            }
+        } elseif ($type == 'absensi') {
+            // Hapus Foto Absensi
+            $q = mysqli_query($koneksi, "SELECT foto_absensi FROM notulensi WHERE id_n = '$id'");
+            if ($row = mysqli_fetch_assoc($q)) {
+                $files = json_decode($row['foto_absensi'] ?? '[]', true);
+                if (is_array($files)) {
+                    foreach ($files as $f) {
+                        if (file_exists("uploads/absensi/$f")) unlink("uploads/absensi/$f");
+                    }
+                }
+            }
+            $update = mysqli_query($koneksi, "UPDATE notulensi SET foto_absensi = '[]' WHERE id_n = '$id'");
+            if ($update) {
+                set_alert("File Absensi berhasil dihapus.", 'success');
+            } else {
+                set_alert("Gagal update absensi: " . mysqli_error($koneksi), 'error');
+            }
+        }
     }
 }
 
@@ -481,10 +782,29 @@ $folders = get_folders($arsip_dir);
         /* CHIPS */
         .file-chips {
             display: flex;
-            gap: 5px;
+            flex-direction: column;
+            /* Vertical Layout */
+            gap: 8px;
+            /* Jarak antar baris */
             margin-top: auto;
-            flex-wrap: wrap;
             margin-bottom: 15px;
+        }
+
+        .file-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            /* File kiri, tombol kanan */
+            background: #f8fafc;
+            padding: 5px 10px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .file-left {
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         .chip {
@@ -559,55 +879,58 @@ $folders = get_folders($arsip_dir);
         }
 
         /* Badge untuk membedakan Arsip Manual vs Otomatis */
-.badge-sumber {
-    font-size: 10px;
-    padding: 3px 8px;
-    border-radius: 12px;
-    margin-left: 8px;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-/* Warna Orange untuk Manual */
-.badge-manual {
-    background-color: #fff7ed;
-    color: #c2410c;
-    border: 1px solid #ffedd5;
-}
-/* Warna Biru untuk System */
-.badge-auto {
-    background-color: #eff6ff;
-    color: #1d4ed8;
-    border: 1px solid #dbeafe;
-}
-/* Style untuk Chip/Tombol File */
-.chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    text-decoration: none;
-    margin-right: 5px;
-    transition: 0.2s;
-    border: 1px solid transparent;
-}
-.chip.active {
-    background-color: #f1f5f9;
-    color: #334155;
-    border-color: #cbd5e1;
-}
-.chip.active:hover {
-    background-color: #e2e8f0;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-.chip.disabled {
-    background-color: #f8fafc;
-    color: #cbd5e1;
-    cursor: not-allowed;
-}
+        .badge-sumber {
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            margin-left: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Warna Orange untuk Manual */
+        .badge-manual {
+            background-color: #fff7ed;
+            color: #c2410c;
+            border: 1px solid #ffedd5;
+        }
+
+        /* Warna Biru untuk System */
+        .badge-auto {
+            background-color: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #dbeafe;
+        }
+
+        /* Style untuk Chip/Tombol File */
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            text-decoration: none;
+            margin-right: 5px;
+            transition: 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .chip.active {
+            background-color: #f1f5f9;
+            color: #334155;
+            border-color: #cbd5e1;
+        }
+
+        .chip.active:hover {
+            background-color: #e2e8f0;
+
+            .chip.disabled {
+                background-color: #f8fafc;
+                color: #cbd5e1;
+                cursor: not-allowed;
+            }
     </style>
 </head>
 
@@ -682,118 +1005,244 @@ $folders = get_folders($arsip_dir);
 
             <!-- LIST ARSIP -->
             <div class="archive-grid">
-    <?php
-    // 1. Panggil Data dari VIEW SQL
-    $query = "SELECT * FROM view_semua_arsip ORDER BY tanggal DESC";
-    $result = mysqli_query($koneksi, $query);
+                <?php
+                // 1. Panggil Data dari VIEW SQL
+                $query = "SELECT * FROM view_semua_arsip ORDER BY tanggal DESC";
+                $result = mysqli_query($koneksi, $query);
 
-    // 2. Loop Data Satu per Satu
-    while ($row = mysqli_fetch_assoc($result)): 
-        
-        // Cek Sumber Arsip (Manual / Otomatis)
-        $isManual = ($row['sumber'] == 'manual');
-        
-        // Tentukan Warna & Label
-        $iconColor   = $isManual ? '#f97316' : '#2563eb'; // Orange vs Biru
-        $sumberLabel = $isManual ? 'Manual Upload' : 'System Generated';
-        $sumberClass = $isManual ? 'badge-manual' : 'badge-auto';
-    ?>
+                // 2. Loop Data Satu per Satu
+                while ($row = mysqli_fetch_assoc($result)):
 
-    <div class="archive-card">
-        <div class="ac-header">
-            <i class="fas fa-folder ac-icon" style="color: <?= $iconColor ?>"></i>
-            
-            <div class="ac-actions">
-                <?php if($isManual): ?>
-                    <form method="post" onsubmit="return confirm('Hapus arsip ini?');" style="display:inline;">
-                        <input type="hidden" name="id_hapus" value="<?= $row['id_referensi'] ?>">
-                        <button type="submit" name="hapus_manual" style="border:none; background:none; cursor:pointer; color:#ef4444;">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </form>
-                <?php else: ?>
-                     <i class="fas fa-robot" title="Arsip Otomatis" style="color: #cbd5e1;"></i>
+                    // Cek Sumber Arsip (Manual / Otomatis) untuk LINK saja, Tampilan disamakan
+                    $isManual = ($row['sumber'] == 'manual');
+
+                    // Tentukan Warna Default (Biru)
+                    $iconColor   = '#2563eb';
+                ?>
+
+                    <div class="archive-card">
+                        <div class="ac-header">
+                            <i class="fas fa-folder ac-icon" style="color: <?= $iconColor ?>"></i>
+
+                            <div class="ac-actions">
+                                <!-- TOMBOL HAPUS FOLDER (SEMUA TIPE) -->
+                                <form method="post" onsubmit="return confirm('Hapus arsip ini beserta seluruh isinya?');" style="display:inline;">
+                                    <input type="hidden" name="id_hapus" value="<?= $row['id_referensi'] ?>">
+                                    <?php if ($isManual): ?>
+                                        <button type="submit" name="hapus_manual" title="Hapus Arsip Manual" style="border:none; background:none; cursor:pointer; color:#ef4444;">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    <?php else: ?>
+                                        <button type="submit" name="hapus_otomatis" title="Hapus Arsip Otomatis" style="border:none; background:none; cursor:pointer; color:#ef4444;">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    <?php endif; ?>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="ac-title" title="<?= htmlspecialchars($row['nama_kegiatan']) ?>">
+                            <?= htmlspecialchars(substr($row['nama_kegiatan'], 0, 50)) . (strlen($row['nama_kegiatan']) > 50 ? '...' : '') ?>
+                        </div>
+
+                        <div class="ac-date">
+                            <i class="far fa-calendar"></i> <?= date('d M Y', strtotime($row['tanggal'])) ?>
+                        </div>
+
+                        <!-- LIST FILE (VERTICAL) -->
+                        <div class="file-chips">
+
+                            <!-- 1. FILE UNDANGAN -->
+                            <div class="file-row">
+                                <div class="file-left">
+                                    <?php if ($row['ada_undangan']):
+                                        if ($isManual) {
+                                            $linkU = (strpos($row['link_undangan'], 'arsip/') === 0) ? $row['link_undangan'] : "arsip/" . $row['folder_path'] . "/undangan/" . $row['link_undangan'];
+                                        } else {
+                                            $linkU = "arsip_pdf/" . $row['link_undangan'];
+                                        }
+                                    ?>
+                                        <a href="<?= $linkU ?>" target="_blank" class="chip active">
+                                            <i class="fas fa-envelope"></i> Undangan
+                                        </a>
+                                        <!-- Edit Button -->
+                                        <?php if ($isManual): ?>
+                                            <button type="button" class="btn-edit-mini" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'file_undangan', 'manual')" title="Ganti File" style="background:none; border:none; cursor:pointer; color:#f59e0b;">
+                                                <i class="fas fa-sync-alt"></i>
+                                            </button>
+                                        <?php else: ?>
+                                            <a href="index.php?page=undangan&id=<?= $row['id_referensi'] ?>" class="btn-edit-mini" title="Edit Data" style="color:#f59e0b;">
+                                                <i class="fas fa-pencil-alt"></i>
+                                            </a>
+                                        <?php endif; ?>
+
+                                </div>
+                                <!-- Delete File Button -->
+                                <div class="file-right">
+                                    <form method="post" onsubmit="return confirm('Hapus file undangan ini?');" style="margin:0;">
+                                        <input type="hidden" name="hapus_file_item" value="1">
+                                        <input type="hidden" name="id_ref" value="<?= $row['id_referensi'] ?>">
+                                        <input type="hidden" name="file_type" value="undangan">
+                                        <input type="hidden" name="source" value="<?= $isManual ? 'manual' : 'otomatis' ?>">
+                                        <button type="submit" title="Hapus File" style="border:none; background:none; cursor:pointer; color:#ef4444;">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                <?php else: ?>
+                                    <span class="chip disabled"><i class="fas fa-envelope"></i> Undangan</span>
+                                </div>
+                                <div class="file-right">
+                                    <?php if ($isManual): ?>
+                                        <button type="button" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'file_undangan', 'manual')" title="Upload File" style="border:none; background:none; cursor:pointer; color:#2563eb;">
+                                            <i class="fas fa-upload"></i>
+                                        </button>
+                                    <?php else: ?>
+                                        <a href="index.php?page=undangan&id=<?= $row['id_referensi'] ?>" class="btn-edit-mini" title="Buat Undangan" style="color:#2563eb; margin-right:5px; text-decoration:none;">
+                                            <i class="fas fa-pencil-alt"></i>
+                                        </a>
+                                        <button type="button" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'undangan', 'otomatis')" title="Upload File" style="border:none; background:none; cursor:pointer; color:#2563eb;">
+                                            <i class="fas fa-upload"></i>
+                                        </button>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <!-- 2. FILE NOTULENSI -->
+                            <div class="file-row">
+                                <div class="file-left">
+                                    <?php if ($row['ada_notulensi']):
+                                        if ($isManual) {
+                                            $linkN = (strpos($row['link_notulensi'], 'arsip/') === 0) ? $row['link_notulensi'] : "arsip/" . $row['folder_path'] . "/notulensi/" . $row['link_notulensi'];
+                                        } else {
+                                            $linkN = !empty($row['notulensi_pdf']) ? "arsip_pdf/" . $row['notulensi_pdf'] : "pages/cetak_notulensi.php?id=" . $row['id_referensi'];
+                                        }
+                                    ?>
+                                        <a href="<?= $linkN ?>" target="_blank" class="chip active">
+                                            <i class="fas fa-file-alt"></i> Notulensi
+                                        </a>
+                                        <!-- Edit Button -->
+                                        <?php if ($isManual): ?>
+                                            <button type="button" class="btn-edit-mini" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'file_notulensi', 'manual')" title="Ganti File" style="background:none; border:none; cursor:pointer; color:#f59e0b;">
+                                                <i class="fas fa-sync-alt"></i>
+                                            </button>
+                                        <?php else: ?>
+                                            <a href="index.php?page=notulensi&id=<?= $row['id_referensi'] ?>" class="btn-edit-mini" title="Edit Data" style="color:#f59e0b;">
+                                                <i class="fas fa-pencil-alt"></i>
+                                            </a>
+                                        <?php endif; ?>
+
+                                </div>
+                                <!-- Delete File Button -->
+                                <div class="file-right">
+                                    <form method="post" onsubmit="return confirm('Hapus file notulensi ini?');" style="margin:0;">
+                                        <input type="hidden" name="hapus_file_item" value="1">
+                                        <input type="hidden" name="id_ref" value="<?= $row['id_referensi'] ?>">
+                                        <input type="hidden" name="file_type" value="notulensi">
+                                        <input type="hidden" name="source" value="<?= $isManual ? 'manual' : 'otomatis' ?>">
+                                        <button type="submit" title="Hapus File" style="border:none; background:none; cursor:pointer; color:#ef4444;">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                <?php else: ?>
+                                    <?php if (!$isManual && $row['ada_undangan']): ?>
+                                        <a href="index.php?page=notulensi&id=<?= $row['id_referensi'] ?>" class="chip active" style="background:#eab308; color:white;">
+                                            <i class="fas fa-plus"></i> Buat Notulensi
+                                        </a>
+                                    <?php else: ?>
+                                        <span class="chip disabled"><i class="fas fa-file-alt"></i> Notulensi</span>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="file-right">
+                                    <?php if ($isManual): ?>
+                                        <button type="button" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'file_notulensi', 'manual')" title="Upload File" style="border:none; background:none; cursor:pointer; color:#2563eb;">
+                                            <i class="fas fa-upload"></i>
+                                        </button>
+                                    <?php else: ?>
+                                        <?php if (!$isManual && $row['ada_undangan']): ?>
+                                            <button type="button" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'notulensi', 'otomatis')" title="Upload File" style="border:none; background:none; cursor:pointer; color:#2563eb;">
+                                                <i class="fas fa-upload"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <!-- 3. FILE ABSENSI -->
+                            <div class="file-row">
+                                <div class="file-left">
+                                    <?php if ($row['ada_absensi']):
+                                        if ($isManual) {
+                                            $linkA = (strpos($row['link_absensi'], 'arsip/') === 0) ? $row['link_absensi'] : "arsip/" . $row['folder_path'] . "/absensi/" . $row['link_absensi'];
+                                        } else {
+                                            $files = json_decode($row['link_absensi'], true);
+                                            $linkA = (!empty($files) && is_array($files)) ? ((strpos($files[0], '/') === false) ? "uploads/absensi/" . $files[0] : $files[0]) : "#";
+                                        }
+                                    ?>
+                                        <a href="<?= $linkA ?>" target="_blank" class="chip active">
+                                            <i class="fas fa-user-check"></i> Absensi
+                                        </a>
+                                        <!-- Edit Button -->
+                                        <?php if ($isManual): ?>
+                                            <button type="button" class="btn-edit-mini" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'file_absensi', 'manual')" title="Ganti File" style="background:none; border:none; cursor:pointer; color:#f59e0b;">
+                                                <i class="fas fa-sync-alt"></i>
+                                            </button>
+                                        <?php endif; ?>
+
+                                </div>
+                                <!-- Delete File Button -->
+                                <div class="file-right">
+                                    <form method="post" onsubmit="return confirm('Hapus file absensi ini?');" style="margin:0;">
+                                        <input type="hidden" name="hapus_file_item" value="1">
+                                        <input type="hidden" name="id_ref" value="<?= $row['id_referensi'] ?>">
+                                        <input type="hidden" name="file_type" value="absensi">
+                                        <input type="hidden" name="source" value="<?= $isManual ? 'manual' : 'otomatis' ?>">
+                                        <button type="submit" title="Hapus File" style="border:none; background:none; cursor:pointer; color:#ef4444;">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                <?php else: ?>
+                                    <span class="chip disabled"><i class="fas fa-user-check"></i> Absensi</span>
+                                </div>
+                                <div class="file-right">
+                                    <?php if ($isManual): ?>
+                                        <button type="button" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'file_absensi', 'manual')" title="Upload File" style="border:none; background:none; cursor:pointer; color:#2563eb;">
+                                            <i class="fas fa-upload"></i>
+                                        </button>
+                                    <?php else: ?>
+                                        <button type="button" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'absensi', 'otomatis')" title="Upload File" style="border:none; background:none; cursor:pointer; color:#2563eb;">
+                                            <i class="fas fa-upload"></i>
+                                        </button>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                <?php endwhile; ?>
+
+                <?php if (mysqli_num_rows($result) == 0): ?>
+                    <div style="grid-column: 1/-1; text-align:center; padding: 40px; color: #94a3b8; border: 2px dashed #cbd5e1; border-radius: 8px;">
+                        <i class="fas fa-folder-open" style="font-size: 40px; margin-bottom: 10px; color: #cbd5e1;"></i>
+                        <p>Belum ada arsip tersimpan.</p>
+                    </div>
                 <?php endif; ?>
             </div>
-        </div>
-
-        <div class="ac-title" title="<?= htmlspecialchars($row['nama_kegiatan']) ?>">
-            <?= htmlspecialchars(substr($row['nama_kegiatan'], 0, 50)) . (strlen($row['nama_kegiatan']) > 50 ? '...' : '') ?>
-        </div>
-        
-        <div class="ac-date">
-            <i class="far fa-calendar"></i> <?= date('d M Y', strtotime($row['tanggal'])) ?>
-            <span class="badge-sumber <?= $sumberClass ?>"><?= $sumberLabel ?></span>
-        </div>
-
-        <div class="file-chips" style="margin-top: 15px;">
-            
-            <?php if($row['ada_undangan']): ?>
-                <?php 
-                    if ($isManual) {
-                        // Path: arsip/2026-02-06 Nama/undangan/file.pdf
-                        $linkU = "arsip/" . $row['folder_path'] . "/undangan/" . $row['link_undangan'];
-                    } else {
-                        // Path: arsip_pdf/file.pdf (Hasil Generate)
-                        $linkU = "arsip_pdf/" . $row['link_undangan'];
-                    }
-                ?>
-                <a href="<?= $linkU ?>" target="_blank" class="chip active">
-                    <i class="fas fa-envelope"></i> Undangan
-                </a>
-            <?php else: ?>
-                <span class="chip disabled"><i class="fas fa-envelope"></i> Undangan</span>
-            <?php endif; ?>
-
-            <?php if($row['ada_notulensi']): ?>
-                <?php 
-                    if ($isManual) {
-                        // Path: arsip/2026-02-06 Nama/notulensi/file.pdf
-                        $linkN = "arsip/" . $row['folder_path'] . "/notulensi/" . $row['link_notulensi'];
-                    } else {
-                        // Link ke Halaman Cetak Notulen
-                        $linkN = "pages/cetak_notulensi.php?id=" . $row['id_referensi'];
-                    }
-                ?>
-                <a href="<?= $linkN ?>" target="_blank" class="chip active">
-                    <i class="fas fa-file-alt"></i> Notulensi
-                </a>
-            <?php else: ?>
-                <span class="chip disabled"><i class="fas fa-file-alt"></i> Notulensi</span>
-            <?php endif; ?>
-
-            <?php if($row['ada_absensi']): ?>
-                <?php 
-                    if ($isManual) {
-                        // Path: arsip/2026-02-06 Nama/absensi/file.png
-                        $linkA = "arsip/" . $row['folder_path'] . "/absensi/" . $row['link_absensi'];
-                    } else {
-                        // Link ke Halaman View Absensi
-                        $linkA = "index.php?page=absensi_view&id=" . $row['id_referensi'];
-                    }
-                ?>
-                <a href="<?= $linkA ?>" target="_blank" class="chip active">
-                    <i class="fas fa-user-check"></i> Absensi
-                </a>
-            <?php else: ?>
-                <span class="chip disabled"><i class="fas fa-user-check"></i> Absensi</span>
-            <?php endif; ?>
 
         </div>
     </div>
 
-    <?php endwhile; ?>
-
-    <?php if(mysqli_num_rows($result) == 0): ?>
-        <div style="grid-column: 1/-1; text-align:center; padding: 40px; color: #94a3b8; border: 2px dashed #cbd5e1; border-radius: 8px;">
-            <i class="fas fa-folder-open" style="font-size: 40px; margin-bottom: 10px; color: #cbd5e1;"></i>
-            <p>Belum ada arsip tersimpan.</p>
-        </div>
-    <?php endif; ?>
-</div>
-
-        </div>
-    </div>
+    <!-- HIDDEN FORM FOR REPLACING FILES -->
+    <form id="form-replace" method="post" enctype="multipart/form-data" style="display:none;">
+        <input type="hidden" name="replace_file" value="1">
+        <input type="hidden" name="id_referensi" id="replace-id">
+        <input type="hidden" name="file_type" id="replace-type">
+        <input type="hidden" name="source" id="replace-source">
+        <input type="file" name="new_file" id="replace-input" onchange="submitReplacement()">
+    </form>
 
     <!-- NOTIFICATION -->
     <div id="notif" class="notification">
@@ -801,6 +1250,26 @@ $folders = get_folders($arsip_dir);
     </div>
 
     <script>
+        // Trigger File Input for Replacement
+        function triggerReplace(id, type, source = 'manual') {
+            document.getElementById('replace-id').value = id;
+            document.getElementById('replace-type').value = type;
+            document.getElementById('replace-source').value = source;
+            document.getElementById('replace-input').click();
+        }
+
+        // Auto Submit when file selected
+        function submitReplacement() {
+            const input = document.getElementById('replace-input');
+            if (input.files.length > 0) {
+                if (confirm('Apakah Anda yakin ingin mengganti file ini dengan "' + input.files[0].name + '"?')) {
+                    document.getElementById('form-replace').submit();
+                } else {
+                    input.value = ''; // Reset if cancelled
+                }
+            }
+        }
+
         function updateFileName(input) {
             if (input.files && input.files[0]) {
                 const span = input.closest('label').querySelector('.file-status');

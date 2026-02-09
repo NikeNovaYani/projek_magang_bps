@@ -4,6 +4,8 @@ session_start();
 
 <?php
 // ========== UTIL ==========
+require_once __DIR__ . '/../koneksi.php';
+
 $bulan_indonesia = [
     'January' => 'Januari',
     'February' => 'Februari',
@@ -25,6 +27,9 @@ function formatTanggalIndo($date)
     $ts = strtotime($date);
     return date('d', $ts) . ' ' . $bulan_indonesia[date('F', $ts)] . ' ' . date('Y', $ts);
 }
+
+// ========== AMBIL ID UNDANGAN ==========
+$id_undangan = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 // ========== LOAD FROM ARCHIVE ==========
 $is_loaded_from_archive = false;
@@ -62,22 +67,81 @@ if (isset($_GET['load'])) {
     }
 }
 
-// ========== DATA DEFAULT (Using fallback if not loaded) ==========
-if (!isset($unit_kerja)) { // Only set defaults if variables not already set
-    $unit_kerja    = $_POST['unit_kerja'] ?? 'Tim Kegiatan Pembinaan Desa Cantik BPS Kota Depok';
-    $tanggal_raw   = $_POST['tanggal'] ?? date('Y-m-d');
-    $pimpinan      = $_POST['pimpinan'] ?? 'Satriana Yasmuarto, S.Si, MM';
-    $pukul_mulai   = $_POST['pukul_mulai'] ?? '09:00';
-    $pukul_selesai = $_POST['pukul_selesai'] ?? '11:00';
-    $topik         = $_POST['topik'] ?? ('Rapat Tim Kegiatan Pembinaan Desa Cantik ' . date('Y'));
-    $tempat        = $_POST['tempat'] ?? 'Ruang Rapat BPS Kota Depok';
-    $lampiran      = $_POST['lampiran'] ?? "1. Dokumentasi\n2. Daftar Hadir";
-    $peserta       = $_POST['peserta'] ?? "Sebagaimana Terlampir";
-    $agenda        = $_POST['agenda'] ?? "✓ Pembukaan\n✓ Pembahasan dan Diskusi\n✓ Kesimpulan dan Tindak Lanjut";
-    $pembukaan     = $_POST['pembukaan'] ?? "Silakan isi pembukaan rapat di sini.";
-    $pembahasan    = $_POST['pembahasan'] ?? "Silakan isi pembahasan dan diskusi di sini.";
-    $kesimpulan    = $_POST['kesimpulan'] ?? '';
+// ========== LOAD FROM DB (Start Fresh from Invitation OR Edit Existing) ==========
+$is_edit_mode_notulensi = false;
+
+if ($id_undangan > 0 && !$is_loaded_from_archive && !isset($_POST['unit_kerja'])) {
+    // 1. Cek apakah sudah ada Notulensi untuk ID ini? (EDIT MODE)
+    $q_cek_not = mysqli_query($koneksi, "SELECT * FROM notulensi WHERE id_n = '$id_undangan'");
+
+    if ($d_not = mysqli_fetch_assoc($q_cek_not)) {
+        // === EDIT MODE ===
+        $is_edit_mode_notulensi = true;
+
+        $unit_kerja    = $d_not['unit_kerja'];
+        $tanggal_raw   = $d_not['tanggal_rapat'];
+        $pimpinan      = $d_not['pimpinan_rapat'];
+        $pukul_mulai   = $d_not['waktu_mulai'];
+        $pukul_selesai = $d_not['waktu_selesai'];
+
+        // FIX: Correct Mapping
+        $nama_kegiatan = $d_not['nama_kegiatan']; // Map column nama_kegiatan to variable
+        $topik         = $d_not['topik'];         // Map column topik to variable
+
+        $tempat        = $d_not['tempat'];
+        $peserta       = $d_not['peserta'];
+        $agenda        = $d_not['agenda'];
+        $pembukaan     = $d_not['isi_pembukaan'];
+        $pembahasan    = $d_not['isi_pembahasan'];
+        $kesimpulan    = $d_not['isi_kesimpulan'];
+
+        // TTD
+        $ttd_tempat    = $d_not['tempat_pembuatan'];
+        $ttd_tanggal   = $d_not['tanggal_pembuatan'];
+        $ttd_nama      = $d_not['nama_notulis'];
+
+        // Decode Images
+        $dokumentasi_files = json_decode($d_not['foto_dokumentasi'], true) ?? [];
+        $absensi_files     = json_decode($d_not['foto_absensi'], true) ?? [];
+
+        $lampiran      = $d_not['lampiran_ket'] ?? "1. Dokumentasi\n2. Daftar Hadir";
+    } else {
+        // === CREATE MODE (Load from Undangan) ===
+        $q_und = mysqli_query($koneksi, "SELECT * FROM undangan WHERE id_u = '$id_undangan'");
+        if ($d_und = mysqli_fetch_assoc($q_und)) {
+            $nama_kegiatan = $d_und['nama_kegiatan'];
+            $tanggal_raw   = $d_und['hari_tanggal_acara'];
+            $tempat        = $d_und['tempat_acara'];
+            // $agenda        = $d_und['agenda']; // Notulensi biasanya punya agenda standar sendiri
+            $topik         = $d_und['perihal']; // Atau nama kegiatan
+
+            // Coba parsing waktu
+            // Format di DB: "09:00 s.d 12:00 WIB"
+            $waktu_parts = explode(' s.d ', str_replace(' WIB', '', $d_und['waktu_acara']));
+            $pukul_mulai = $waktu_parts[0] ?? '09:00';
+            $pukul_selesai = $waktu_parts[1] ?? 'Selesai';
+        }
+    }
 }
+
+// ========== DATA DEFAULT (Using fallback if not loaded) ==========
+// Only set defaults if variables not already set
+$unit_kerja    = $unit_kerja ?? ($_POST['unit_kerja'] ?? 'Tim Kegiatan Pembinaan Desa Cantik BPS Kota Depok');
+$tanggal_raw   = $tanggal_raw ?? ($_POST['tanggal'] ?? date('Y-m-d'));
+$pimpinan      = $pimpinan ?? ($_POST['pimpinan'] ?? 'Satriana Yasmuarto, S.Si, MM');
+$pukul_mulai   = $pukul_mulai ?? ($_POST['pukul_mulai'] ?? '09:00');
+$pukul_selesai = $pukul_selesai ?? ($_POST['pukul_selesai'] ?? '11:00');
+$topik         = $topik ?? ($_POST['topik'] ?? ('Rapat Tim Kegiatan Pembinaan Desa Cantik ' . date('Y')));
+$tempat        = $tempat ?? ($_POST['tempat'] ?? 'Ruang Rapat BPS Kota Depok');
+$lampiran      = $lampiran ?? ($_POST['lampiran'] ?? "1. Dokumentasi\n2. Daftar Hadir");
+$peserta       = $peserta ?? ($_POST['peserta'] ?? "Sebagaimana Terlampir");
+$agenda        = $agenda ?? ($_POST['agenda'] ?? "✓ Pembukaan\n✓ Pembahasan dan Diskusi\n✓ Kesimpulan dan Tindak Lanjut");
+$pembukaan     = $pembukaan ?? ($_POST['pembukaan'] ?? "Silakan isi pembukaan rapat di sini.");
+$pembahasan    = $pembahasan ?? ($_POST['pembahasan'] ?? "Silakan isi pembahasan dan diskusi di sini.");
+$kesimpulan    = $kesimpulan ?? ($_POST['kesimpulan'] ?? '');
+
+// Initialize nama_kegiatan if empty
+$nama_kegiatan = $nama_kegiatan ?? ($_POST['nama_kegiatan'] ?? '');
 
 // TTD Notulis (Load or Default)
 $p_tempat  = $_POST['p_tempat'] ?? ($p_tempat ?? 'Depok');
@@ -768,6 +832,8 @@ if ($is_print) {
                         </div>
                         <div class="card-body">
                             <form method="POST" id="notulenForm">
+                                <input type="hidden" name="id_undangan" value="<?= $id_undangan ?>">
+                                <input type="hidden" name="id_n" value="<?= $id_undangan ?>">
                                 <!-- HIDDEN INPUTS FOR EXISTING FILES -->
                                 <?php if (!empty($dokumentasi_files)): ?>
                                     <?php foreach ($dokumentasi_files as $f):
@@ -1332,9 +1398,17 @@ if ($is_print) {
                                 }
                                 reader.readAsDataURL(file);
                             } else if (typeof file === 'string') {
+
                                 src = file;
-                                if (archiveFolder && !src.includes('uploads/') && !src.startsWith('data:')) {
+                                if (archiveFolder && !src.includes('/') && !src.startsWith('data:')) {
                                     src = 'arsip/' + archiveFolder + '/' + src;
+                                } else if (!src.includes('/') && !src.startsWith('data:')) {
+                                    // Default Uploads (Standard Notulensi)
+                                    if (title === 'DOKUMENTASI') {
+                                        src = 'uploads/dokumentasi/' + src;
+                                    } else {
+                                        src = 'uploads/absensi/' + src;
+                                    }
                                 }
                                 renderImg(src);
                             }
@@ -1424,21 +1498,7 @@ if ($is_print) {
                 /* =========================
                    SIMPAN KE SESSION (AJAX)
                 ========================= */
-                function saveNotulensi() {
-                    tinymce.triggerSave(); // WAJIB
 
-                    const form = document.getElementById('notulenForm');
-                    const data = new FormData(form);
-
-                    fetch('pages/save_notulensi.php', {
-                            method: 'POST',
-                            body: data
-                        })
-                        .then(r => r.text())
-                        .then(res => {
-                            if (res.trim() === 'OK') showNotif();
-                        });
-                }
 
                 /* =========================
                    PREVIEW
@@ -1646,55 +1706,95 @@ if ($is_print) {
                     const form = document.getElementById('notulenForm');
                     const originalText = btn.innerText;
 
+                    // 1. Validasi Input Penting
+                    const namaKegiatan = form.querySelector('[name="nama_kegiatan"]').value.trim();
+                    if (!namaKegiatan) {
+                        alert('Mohon isi Nama Kegiatan terlebih dahulu.');
+                        return;
+                    }
+
                     // Update UI
                     btn.innerText = 'Menyimpan...';
                     btn.disabled = true;
 
-                    // Collect Data (Sync TinyMCE if available)
+                    // Sync TinyMCE (Editor Teks)
                     if (typeof tinymce !== 'undefined') tinymce.triggerSave();
+
                     const data = new FormData(form);
 
-                    // 1. Send to Archive
-                    fetch('pages/save_notulensi.php?action=archive', {
+                    // 2. Tentukan URL Action berdasarkan lokasi file
+                    let saveUrl = 'pages/save_notulensi.php';
+                    let pdfUrlBase = 'pdf/generate_notulensi.php';
+
+                    if (window.location.pathname.includes('/pages/')) {
+                        saveUrl = 'save_notulensi.php';
+                        pdfUrlBase = '../pdf/generate_notulensi.php';
+                    }
+
+                    fetch(saveUrl, {
                             method: 'POST',
                             body: data
                         })
-                        .then(response => response.text())
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok: ' + response.statusText);
+                            }
+                            return response.text();
+                        })
                         .then(result => {
-                            const folderName = result.trim();
+                            // Trim dan ambil hanya angka
+                            let idNotulen = result.trim();
+                            // Hapus karakter non-digit (untuk bersihkan BOM atau whitespace bandel)
+                            let cleanId = idNotulen.replace(/\D/g, '');
+                            let idValid = parseInt(cleanId);
 
-                            // Check valid folder name (simple check)
-                            if (folderName && !folderName.includes('<br') && !folderName.includes('Error')) {
-                                // 2. Trigger Silent Download
-                                const iframe = document.createElement('iframe');
-                                iframe.style.display = 'none';
-                                iframe.src = 'pdf/generate_notulensi.php?download=true&archive_folder=' + encodeURIComponent(folderName);
-                                document.body.appendChild(iframe);
-
-                                setTimeout(() => {
-                                    alert('Notulensi berhasil diarsipkan dan PDF diunduh!');
-                                    btn.innerText = originalText;
-                                    btn.disabled = false;
-                                }, 1500);
+                            if (!isNaN(idValid) && idValid > 0) {
+                                window.open(pdfUrlBase + '?id=' + idValid, '_blank');
+                                alert('Data berhasil disimpan! PDF akan terbuka di tab baru.');
+                                btn.innerText = originalText;
+                                btn.disabled = false;
                             } else {
-                                alert('Gagal menyimpan arsip: ' + result);
-                                console.error(result);
+                                alert('Gagal menyimpan notulensi.\nResponse Asli: "' + result + '"\nParsed ID: ' + idValid);
+                                console.error('Server Response:', result);
                                 btn.innerText = originalText;
                                 btn.disabled = false;
                             }
                         })
                         .catch(err => {
-                            alert('Terjadi kesalahan koneksi.');
-                            console.error(err);
+                            alert('Terjadi kesalahan koneksi atau error sistem. Cek konsol browser.');
+                            console.error('Fetch Error:', err);
                             btn.innerText = originalText;
                             btn.disabled = false;
                         });
                 }
 
                 function saveNotulensi() {
+                    // Validasi Nama Kegiatan
+                    const form = document.getElementById('notulenForm');
+                    const namaKegiatan = form.querySelector('[name="nama_kegiatan"]').value.trim();
+
+                    if (!namaKegiatan) {
+                        // Tampilkan notifikasi di atas form
+                        let notif = document.getElementById('validation-notif');
+                        if (!notif) {
+                            notif = document.createElement('div');
+                            notif.id = 'validation-notif';
+                            notif.style.cssText = 'background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ffeeba; font-weight: bold; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);';
+                            // Insert before the form tabs or title
+                            const container = document.querySelector('.card-body');
+                            container.insertBefore(notif, container.firstChild);
+                        }
+                        notif.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Harap isi "Nama Kegiatan Rapat" terlebih dahulu sebelum menyimpan.';
+
+                        // Scroll ke atas
+                        document.querySelector('.main-content').scrollTop = 0; // Scroll container content
+                        document.documentElement.scrollTop = 0; // Scroll body just in case
+
+                        return; // Stop save
+                    }
+
                     if (typeof tinymce !== 'undefined') tinymce.triggerSave();
 
-                    const form = document.getElementById('notulenForm');
                     const data = new FormData(form);
 
                     fetch('pages/save_notulensi.php', {
@@ -1703,8 +1803,21 @@ if ($is_print) {
                         })
                         .then(r => r.text())
                         .then(res => {
-                            if (res.trim() === 'OK') showNotif();
-                            else alert('Gagal simpan: ' + res);
+                            // Bersihkan response dari karakter non-digit
+                            let cleanId = res.replace(/\D/g, '');
+                            let idValid = parseInt(cleanId);
+
+                            if (!isNaN(idValid) && idValid > 0) {
+                                showNotif();
+                                // Update ID di form jika data baru, supaya save berikutnya jadi UPDATE
+                                const form = document.getElementById('notulenForm');
+                                const inputId = form.querySelector('[name="id_undangan"]');
+                                if (inputId && inputId.value == 0) inputId.value = idValid;
+                            } else {
+                                // Fallback jika response bukan angka
+                                if (res.trim() === 'OK') showNotif();
+                                else alert('Gagal simpan: ' + res);
+                            }
                         })
                         .catch(e => alert('Error: ' + e));
                 }

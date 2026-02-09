@@ -26,6 +26,8 @@ $allowed_pages = [
     'undangan',
     'notulensi',
     'absensi',
+
+
     'arsip',
     'logout'
 ];
@@ -98,10 +100,12 @@ $page_title = $page_titles[$page] ?? 'Sistem Rapat';
                     include __DIR__ . '/pages/absensi.php';
                     break;
 
+
                 case 'arsip':
                     // Saya asumsikan ini juga di folder pages
                     include __DIR__ . '/pages/arsip.php';
                     break;
+
 
                 case 'logout':
                     include __DIR__ . '/pages/logout.php';
