@@ -1,0 +1,320 @@
+
+<style>
+    @page {
+        margin: 25mm;
+    }
+
+    body {
+        font-family: Arial, sans-serif;
+        font-size: 12pt;
+    }
+
+    /* CHECKMARK */
+    .checkmark {
+        font-family: Arial, sans-serif;
+    }
+
+    /* TABLE */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+
+    td {
+        border: 1px solid #000;
+        padding: 6px 10px;
+        vertical-align: top;
+        line-height: 1.40;
+        word-wrap: break-word;
+    }
+
+    /* VALUE */
+    .label-a {
+        width: 130px;
+    }
+
+    /* VALUE  */
+    .label-b {
+        width: 225px;
+    }
+
+    /* VALUE  */
+    .label-c {
+        width: 30px;
+    }
+
+    /* VALUE  */
+    .label-d {
+        width: 140px;
+    }
+
+    /* SPACER */
+    .spacer td {
+        border: none;
+        height: 10mm;
+    }
+
+    /* PAGE BREAK */
+    .page-break {
+        page-break-before: always;
+    }
+
+    /* RESUME STYLE */
+    .resume-table {
+        page-break-inside: avoid;
+    }
+
+    .resume-table td {
+        border: 1px solid #000;
+    }
+
+    /* PARAGRAF */
+    td p {
+        margin: 0 0 0 0;
+        page-break-inside: avoid;
+    }
+
+    /* JUDUL SECTION */
+    .section-title {
+        margin-top: 12px;
+        margin-bottom: 20px;
+        page-break-after: avoid;
+        font-weight: bold;
+    }
+
+    .no-border {
+        border: none !important;
+        padding-top: 4px;
+        padding-bottom: 6px;
+    }
+
+    /* IDENTITAS TABLE */
+    .identitas-table td {
+        text-align: left;
+        vertical-align: middle;
+    }
+
+    /* KESIMPULAN LIST */
+    .resume-table ul,
+    .resume-table ol {
+        margin: 0;
+        padding-left: 20px;
+    }
+
+    .resume-table li {
+        text-align: justify;
+        margin-bottom: 5px;
+    }
+
+    .resume-table li::marker {
+        font-weight: bold;
+    }
+
+    /* LIST STYLE FIX FOR TINYMCE */
+    ol {
+        list-style-type: decimal;
+    }
+
+    /* Support legacy attributes and inline styles */
+    ol[type="a"],
+    ol[style*="lower-alpha"] {
+        list-style-type: lower-alpha !important;
+    }
+
+    ol[type="A"],
+    ol[style*="upper-alpha"] {
+        list-style-type: upper-alpha !important;
+    }
+
+    ol[type="i"],
+    ol[style*="lower-roman"] {
+        list-style-type: lower-roman !important;
+    }
+
+    ol[type="I"],
+    ol[style*="upper-roman"] {
+        list-style-type: upper-roman !important;
+    }
+
+    p.first-line-indent,
+    .first-line-indent {
+        text-indent: 40px !important;
+        margin-left: 0 !important;
+    }
+</style>
+
+<!-- ================= TABEL IDENTITAS ================= -->
+<table class="identitas-table">
+    <tr>
+        <td class="label-a" rowspan="2">Unit Kerja</td>
+        <td class="label-b" rowspan="2">Tim Kegiatan Pembinaan Desa Cantik BPS Kota Depok</td>
+
+        <td class="label-c">Tanggal</td>
+        <td class="label-d">10 Februari 2026</td>
+    </tr>
+    <tr>
+        <td class="label-c">Pukul</td>
+        <td class="label-d">09:00 – Selesai WIB</td>
+    </tr>
+    <tr>
+        <td class="label-a">Pimpinan Rapat</td>
+        <td class="label-b">Satriana Yasmuarto, S.Si, MM</td>
+        <td class="label-c">Tempat</td>
+        <td class="label-d">Ruang Rapat BPS Kota Depok</td>
+    </tr>
+    <tr>
+        <td>Topik</td>
+        <td colspan="3">Rapat Tim Kegiatan Pembinaan Desa Cantik 2025</td>
+    </tr>
+    <tr>
+        <td>Lampiran</td>
+        <td colspan="3">1. Dokumentasi<br>2. Daftar Hadir</td>
+    </tr>
+    <tr class="spacer">
+        <td colspan="4"></td>
+    </tr>
+</table>
+
+
+<!-- ================= PESERTA & AGENDA ================= -->
+<table>
+    <tr>
+        <td class="label" colspan="4">Peserta :</td>
+    </tr>
+    <tr>
+        <td colspan="4">Sebagaimana Terlampir</td>
+    </tr>
+
+    <tr>
+        <td class="label" colspan="4">Agenda :</td>
+    </tr>
+    <tr>
+        <td colspan="4">
+<span class="checkmark">&#10003;</span> Pembukaan<br>
+<span class="checkmark">&#10003;</span> Pembahasan dan Diskusi<br>
+<span class="checkmark">&#10003;</span> Kesimpulan / Tindak Lanjut
+</td>
+    </tr>
+
+    <tr>
+        <td colspan="4"><em>Resume:</em></td>
+    </tr>
+</table>
+
+<!-- ================= HALAMAN RESUME ================= -->
+    
+    <table class="resume-table">
+        <tr>
+            <td><p class="section-title"><strong>Pembukaan</strong></p><p class="first-line-indent">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rapat dimulai dengan sambutan pembukaan dari Bapak Satriana Yasmuarto, yang menyampaikan tujuan rapat sebagai bagian dari persiapan pelaksanaan program Desa Cinta Statistik (Desa Cantik) di Kelurahan Ratu Jaya, Kecamatan Cipayung, Kota Depok. Beliau<br>menekankan pentingnya sinergi antar lembaga dalam mendukung keberhasilan program ini dan mengajak seluruh peserta untuk berkomitmen menjalankan tugas-tugas yang telah ditetapkan.</p><p>&nbsp;</p><p class="section-title"><strong>Pembahasan dan Diskusi</strong></p></td>
+        </tr>
+    </table>
+            <div class="page-break"></div>
+    
+    <table class="resume-table">
+        <tr>
+            <td><div>
+<ol style="list-style-type: lower-alpha;">
+<li><strong>Rancangan Kegiatan dan Jadwal Program Desa Cantik</strong></li>
+</ol>
+</div>
+<div>Dalam sesi ini, dibahas rancangan kegiatan serta timeline pembinaan Agen Statistik dan program Desa Cantik secara keseluruhan. Beberapa poin penting yang dibahas meliputi:</div>
+<div>&nbsp;</div>
+<div>Jadwal Kegiatan Utama:</div>
+<div>&nbsp;</div>
+<div>Sosialisasi Program Desa Cinta Statistik (Desa Cantik)</div>
+<div>Tanggal: Selasa, 27 Mei 2025</div>
+<div>Peserta: Dinas-dinas terkait (Diskominfo, Disdukcapil, DP3AP2KB),Pemkot Depok, Pemerintah Kecamatan Cipayung, serta Pemerintah Kelurahan Ratu Jaya.</div>
+<div>&nbsp;</div>
+<div>Tujuan: Memperkenalkan program kepada stakeholders terkait dan membangun komitmen bersama dalam pelaksanaannya.</div>
+<div>Pembinaan Agen Statistik Ke-1.</div>
+<div>&nbsp;</div>
+<div>Tanggal: Senin, 26 Mei 2025</div>
+<div>Fokus: Pelatihan dasar bagi Agen Statistik Kelurahan Ratu Jaya, termasuk pengenalan data statistik desa, penyusunan produk statistik, dan pengelolaan website desa.</div>
+<div>&nbsp;</div>
+<div>Periode Persiapan: 23 Mei &ndash; 26 Mei 2025 (penyusunan materi, undangan, dan dokumen pendukung).</div>
+<div>Periode Implementasi: 27 Mei &ndash; 31 Mei 2025 (pelaksanaan sosialisasi dan pembinaan pertama).</div>
+<div>&nbsp;</div>
+<div><strong>b. Pembagian Tugas</strong></div>
+<div>Untuk memastikan kelancaran pelaksanaan program, dilakukan pembagian tugas sebagai berikut:</div>
+<div>&nbsp;</div>
+<div>Persiapan Sosialisasi Program Desa Cinta Statistik (27 Mei 2025):</div>
+<div>&nbsp;</div>
+<div>Menyiapkan materi presentasi tentang program Desa Cantik dan manfaatnya bagi desa.</div>
+<div>&nbsp;</div>
+<div>Menghubungi Dinas-dinas terkait (Diskominfo, Disdukcapil, DP3AP2KB) untuk mengundang mereka sebagai narasumber atau peserta. Terkait undangan kepada Dinas terkait juga akan dibantu oleh Diskominfo.</div>
+<div>&nbsp;</div>
+<div>Menyiapkan undangan resmi dan koordinasi teknis pelaksanaan acara.</div>
+<div>&nbsp;</div>
+<div>Menyiapkan dokumentasi visual seperti slide presentasi dan bahan promosi.</div>
+<div>&nbsp;</div>
+<div>Persiapan Pembinaan Agen Statistik Ke-1 (26 Mei 2025):</div>
+<div>&nbsp;</div>
+<div>Menyiapkan materi pelatihan dasar bagi Agen Statistik, dapat dimodifikasi dari materi yang sudah disedikan BPS Pusat.</div>
+<div>Mendampingi teknis penyusunan produk statistik awal, seperti profil desa dan infografis.</div>
+<div>&nbsp;</div>
+<div>Dalam rangka pengusulan kelurahan yang akan menjadi Desa Cantik, secepatnya diperlukan audiensi BPS Kota Depok baik dengan Diskominfo Kota Depok maupun pihak kelurahan yang diusulkan. Adapun Kelurahan yang diusulkan BPS Kota Depok adalah Kelurahan Ratu Jaya. Hal ini berkaitan dengan karakteristik kelurahan yang sudah memenuhi kriteria serta kelurahan tersebut merupakan salah satu pemenang kegiatan Rumah Dataku sehingga diharapkan SDM tersedia dan kemungkinan tersedianya anggaran CSR untuk membantu pelaksanaan survei kelurahan yang bersangkutan apabila diperlukan. Dalam rangka audiensi, agar disiapkan alasan-alasan mengapa kelurahan tersebut diusulkan menjadi calon Desa Cantik. Terkait sosialisasi pembinaan Desa cantik di timeline direncanakan pada minggu ke-3 dan minggu ke-4 sehingga diharapkan segera dilakukan audiensi.</div>
+<div>&nbsp;</div>
+<div>Dalam rangka pemenuhan bukti dukung penilaian Desa Cantik, maka ditunjuk penanggung jawab bukti dukung di masing-masing poin. Penanggung jawab bertugas memeriksa dan memastikan bukti dukung sudah tersedia sebelum deadline pemenuhanbukti dukung berakhir.</div>
+<div>&nbsp;</div></p></td>
+        </tr>
+    </table>
+
+<!-- ================= KESIMPULAN / TINDAK LANJUT (TERPISAH) ================= -->
+<table class="resume-table">
+    <tr class="spacer">
+        <td></td>
+    </tr>
+    <tr>
+        <td><strong>Kesimpulan / Tindak Lanjut</strong></td>
+    </tr>
+    <tr>
+        <td><ul class="checklist">
+<li>Selesai menyiapkan materi, undangan, dan dokumen pendukung sebelum Senin, 25 **Mei **2025.</li>
+<li>Selesai menyiapkan materi, undangan, dan dokumen pendukung sebelum Senin, 25 **Mei **2025.</li>
+<li>Selesai menyiapkan materi, undangan, dan dokumen pendukung sebelum Senin, 25 **Mei **2025.</li>
+<li>Selesai menyiapkan materi, undangan, dan dokumen pendukung sebelum Senin, 25 **Mei **2025.</li>
+<li>Selesai menyiapkan materi, undangan, dan dokumen pendukung sebelum Senin, 25 **Mei **2025.</li>
+</ul></td>
+    </tr>
+</table>
+
+<!-- ================= TANDA TANGAN ================= -->
+<table style="border: none; margin-top: 20px; page-break-inside: avoid; font-size: 12pt;">
+    <tr style="border: none;">
+        <td style="border: none; width: 60%;"></td>
+        <td style="border: none; width: 40%; text-align: center; vertical-align: top;">
+            <p style="margin-bottom: 20px;">Depok, 10 Februari 2026</p>
+            <p style="margin-top: 20px;">Notulis</p>
+
+            <!-- Space Tanda Tangan Manual -->
+            <br><br><br>
+
+            <p style="font-weight: bold; margin-top: 20px;">Nurine Kristy</p>
+        </td>
+    </tr>
+</table>
+
+<!-- ================= DOKUMENTASI (MULTI PAGE) ================= -->
+    
+            <div class="page-break"></div>
+        <h3 style="text-align: center; margin-bottom: 20px;">DOKUMENTASI</h3>
+
+        <div style="text-align: center;">
+                                                <div style="margin-bottom: 30px;">
+                        <img src="C:\xampp\htdocs\projek_magang\pdf/../uploads/dokumentasi/dokumentasi_698a8c256aa71.png" style="max-width: 100%; max-height: 100mm;">
+                    </div>
+                                    </div>
+            
+<!-- ================= DAFTAR HADIR (ABSENSI) ================= -->
+    
+            <div class="page-break"></div>
+        <h3 style="text-align: center; margin-bottom: 20px;">DAFTAR HADIR</h3>
+
+        <div style="text-align: center;">
+                            <div style="margin-bottom: 30px;">
+                    <!-- Use max-height ~150mm to fit landscape A4 comfortably within margins -->
+                    <img src="C:\xampp\htdocs\projek_magang\pdf/../uploads/absensi/absensi_698a8c256ad2c.png" style="max-width: 100%; max-height: 150mm;">
+                </div>
+                    </div>
+            

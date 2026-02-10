@@ -15,6 +15,7 @@ $nama_kegiatan  = mysqli_real_escape_string($koneksi, $_POST['f_nama_kegiatan'] 
 $nomor_surat    = mysqli_real_escape_string($koneksi, $_POST['f_nomor'] ?? '');
 $perihal        = mysqli_real_escape_string($koneksi, $_POST['f_hal'] ?? ''); // Di DB namanya 'perihal'
 $kepada         = mysqli_real_escape_string($koneksi, $_POST['f_kepada'] ?? '');
+$isi_undangan   = mysqli_real_escape_string($koneksi, $_POST['f_isi'] ?? ''); // [BARU] Ambil Isi
 $tanggal_surat  = $_POST['f_tglsurat'] ?? date('Y-m-d');
 
 // Data Acara
@@ -30,6 +31,7 @@ $_SESSION['undangan'] = [
     'nomor' => $nomor_surat,
     'hal' => $perihal,
     'kepada' => $kepada,
+    'isi' => $isi_undangan, // [BARU] Simpan ke Session
     'tanggal' => $tanggal_surat,
     'hari_tanggal' => $hari_tanggal,
     'pukul_mulai' => $waktu_mulai,
@@ -48,6 +50,7 @@ if ($id_u > 0) {
               nomor_surat = '$nomor_surat',
               perihal = '$perihal',
               kepada = '$kepada',
+              isi_undangan = '$isi_undangan',
               tanggal_surat = '$tanggal_surat',
               hari_tanggal_acara = '$hari_tanggal',
               waktu_acara = '$waktu_acara',
@@ -57,17 +60,17 @@ if ($id_u > 0) {
 } else {
     // === INSERT DATA BARU ===
     $query = "INSERT INTO undangan 
-              (nama_kegiatan, nomor_surat, perihal, kepada, tanggal_surat, 
+              (nama_kegiatan, nomor_surat, perihal, kepada, isi_undangan, tanggal_surat, 
                hari_tanggal_acara, waktu_acara, tempat_acara, agenda, undangan_pdf)
               VALUES 
-              ('$nama_kegiatan', '$nomor_surat', '$perihal', '$kepada', '$tanggal_surat', 
-               '$hari_tanggal', '$waktu_acara', '$tempat', '$agenda', NULL)"; 
-               // undangan_pdf diset NULL dulu, nanti diupdate oleh generate_undangan.php
+              ('$nama_kegiatan', '$nomor_surat', '$perihal', '$kepada', '$isi_undangan', '$tanggal_surat', 
+               '$hari_tanggal', '$waktu_acara', '$tempat', '$agenda', NULL)";
+    // undangan_pdf diset NULL dulu, nanti diupdate oleh generate_undangan.php
 }
 
 // Eksekusi Query
 if (mysqli_query($koneksi, $query)) {
-    
+
     // 4. Ambil ID Terbaru
     if ($id_u > 0) {
         $last_id = $id_u;
@@ -76,9 +79,7 @@ if (mysqli_query($koneksi, $query)) {
     }
 
     // 5. PENTING: Kirim ID balik ke Javascript
-    echo $last_id; 
-
+    echo $last_id;
 } else {
     echo "Error Database: " . mysqli_error($koneksi);
 }
-?>

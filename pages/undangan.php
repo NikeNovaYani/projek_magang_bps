@@ -43,6 +43,11 @@ $pejabat = mysqli_fetch_assoc($query_pejabat);
 $id_undangan_edit = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $is_edit_mode = false;
 
+// Pre-fill nama_kegiatan from URL parameter (dari arsip manual "Buat" button)
+if (isset($_GET['nama']) && !empty($_GET['nama'])) {
+    $nama_kegiatan = $_GET['nama'];
+}
+
 if ($id_undangan_edit > 0) {
     $q_edit = mysqli_query($koneksi, "SELECT * FROM undangan WHERE id_u = '$id_undangan_edit'");
     if ($row_edit = mysqli_fetch_assoc($q_edit)) {
@@ -55,10 +60,7 @@ if ($id_undangan_edit > 0) {
         $hal           = $row_edit['perihal'];
         $tglsurat      = $row_edit['tanggal_surat'];
         $kepada        = $row_edit['kepada'];
-        // $isi        = ??? (Isi tidak disimpan di DB saat ini, lihat save_undangan.php)
-        // Kita pakai default text jika isi tidak ada di DB (atau tambah kolom isi di DB nanti)
-        // Untuk sekarang pakai default atau logic parse dari PDF (sulit). 
-        // Best effort: Pakai default text, tapi user bisa edit kembali.
+        $isi        = $row_edit['isi_undangan']; // [BARU] Ambil isi dari DB
 
         $hari     = $row_edit['hari_tanggal_acara'];
 
@@ -673,8 +675,18 @@ function formatWaktu($w)
                         </div>
                     </div>
 
+                    <?php
+                    // [BARU] Pastikan diakhiri dengan titik dua ( : ) sesuai request
+                    $isi_preview = trim($isi);
+                    if (substr($isi_preview, -1) === '.') {
+                        $isi_preview = substr($isi_preview, 0, -1); // Hapus titik di akhir jika ada
+                    }
+                    if (substr($isi_preview, -1) !== ':') {
+                        $isi_preview .= ' :';
+                    }
+                    ?>
                     <p style="text-indent: 40px; text-align: justify; line-height: 1.5; margin-bottom: 15px;">
-                        <?= htmlspecialchars($isi) ?>
+                        <?= htmlspecialchars($isi_preview) ?>
                     </p>
 
                     <table class="detail-table">

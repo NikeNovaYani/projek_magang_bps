@@ -40,12 +40,13 @@ if ($id_notulensi > 0) {
         // Map DB columns to Template Variables
         $data = [
             'unit_kerja'    => $row['unit_kerja'],
+            'tanggal'       => $_GET['tgl'] ?? $row['tanggal_rapat'], // Template uses $data['tanggal']
             'tanggal_raw'   => $_GET['tgl'] ?? $row['tanggal_rapat'], // [BARU] Untuk nama folder
-            'tanggal_fmt'   => formatTanggalIndo($_GET['tgl'] ?? $row['tanggal_rapat']), // Helper needed
+            'tanggal_fmt'   => formatTanggalIndo($_GET['tgl'] ?? $row['tanggal_rapat']),
             'pimpinan'      => $row['pimpinan_rapat'],
             'pukul_mulai'   => $row['waktu_mulai'],
             'pukul_selesai' => $row['waktu_selesai'],
-            'topik'         => $row['nama_kegiatan'], // or topik
+            'topik'         => $row['topik'], // [FIXED] Pakai kolom topik, bukan nama_kegiatan
             'tempat'        => $row['tempat'],
             'lampiran'      => $row['lampiran_ket'],
             'peserta'       => $row['peserta'],
@@ -55,8 +56,15 @@ if ($id_notulensi > 0) {
             'kesimpulan'    => $row['isi_kesimpulan'],
             // TTD
             'p_tempat'      => $row['tempat_pembuatan'],
-            'p_tanggal'     => formatTanggalIndo($row['tanggal_pembuatan']),
-            'p_notulis'     => $row['nama_notulis']
+            'p_tanggal'     => $row['tanggal_pembuatan'], // Jangan format di sini, template sudah formatTanggalIndo()
+            'p_notulis'     => $row['nama_notulis'],
+            // Foto - prepend directory path karena DB hanya simpan nama file
+            'dokumentasi'   => array_map(function ($f) {
+                return (strpos($f, '/') === false) ? 'uploads/dokumentasi/' . $f : $f;
+            }, json_decode($row['foto_dokumentasi'] ?? '[]', true) ?? []),
+            'absensi'       => array_map(function ($f) {
+                return (strpos($f, '/') === false) ? 'uploads/absensi/' . $f : $f;
+            }, json_decode($row['foto_absensi'] ?? '[]', true) ?? []),
         ];
     } else {
         die("Data Notulensi tidak ditemukan.");
@@ -74,7 +82,8 @@ $mpdf = new \Mpdf\Mpdf([
     'margin_left'   => 25,
     'margin_right'  => 25,
     'default_font'  => 'arial',
-    'tempDir'       => __DIR__ . '/../tmp' // Important for image processing
+    'tempDir'       => __DIR__ . '/../tmp', // Important for image processing
+    'shrink_tables_to_fit' => 0 // [FIX] Disable resizing content to fit page
 ]);
 
 $mpdf->showImageErrors = true; // Debug images
@@ -84,6 +93,13 @@ try {
     ob_start();
     include __DIR__ . '/template_notulensi.php';
     $html = ob_get_clean();
+
+    // [FIX] Konversi CSS list-style ke Atribut HTML type secara Robust (Regex)
+    // Menangani variasi spasi atau kutip dari TinyMCE
+    $html = preg_replace('/(<ol[^>]*?)style="[^"]*list-style-type:\s*lower-alpha;?[^"]*"([^>]*>)/i', '$1 type="a" $2', $html);
+    $html = preg_replace('/(<ol[^>]*?)style="[^"]*list-style-type:\s*upper-alpha;?[^"]*"([^>]*>)/i', '$1 type="A" $2', $html);
+    $html = preg_replace('/(<ol[^>]*?)style="[^"]*list-style-type:\s*lower-roman;?[^"]*"([^>]*>)/i', '$1 type="i" $2', $html);
+    $html = preg_replace('/(<ol[^>]*?)style="[^"]*list-style-type:\s*upper-roman;?[^"]*"([^>]*>)/i', '$1 type="I" $2', $html);
 
     /* ================= RENDER PDF ================= */
     $mpdf->WriteHTML($html);

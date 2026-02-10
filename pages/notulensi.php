@@ -1,8 +1,10 @@
 <?php
-session_start();
-?>
+// Mencegah akses langsung ke file ini
+if (basename($_SERVER['PHP_SELF']) === basename(__FILE__)) {
+    header("Location: ../index.php?page=notulensi");
+    exit();
+}
 
-<?php
 // ========== UTIL ==========
 require_once __DIR__ . '/../koneksi.php';
 
@@ -141,6 +143,10 @@ $pembahasan    = $pembahasan ?? ($_POST['pembahasan'] ?? "Silakan isi pembahasan
 $kesimpulan    = $kesimpulan ?? ($_POST['kesimpulan'] ?? '');
 
 // Initialize nama_kegiatan if empty
+// Support pre-fill from arsip manual "Buat" button via URL parameter
+if (isset($_GET['nama']) && !empty($_GET['nama']) && !isset($nama_kegiatan)) {
+    $nama_kegiatan = $_GET['nama'];
+}
 $nama_kegiatan = $nama_kegiatan ?? ($_POST['nama_kegiatan'] ?? '');
 
 // TTD Notulis (Load or Default)
@@ -798,6 +804,64 @@ if ($is_print) {
                 padding: 0;
             }
         }
+
+        /* Existing Photo Gallery */
+        .existing-photos {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        .existing-photo-item {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #e2e8f0;
+            transition: 0.2s;
+        }
+
+        .existing-photo-item:hover {
+            border-color: #ef4444;
+        }
+
+        .existing-photo-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .existing-photo-item .btn-remove {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            transition: 0.15s;
+            opacity: 0;
+        }
+
+        .existing-photo-item:hover .btn-remove {
+            opacity: 1;
+        }
+
+        .existing-photo-item .btn-remove:hover {
+            background: #dc2626;
+            transform: scale(1.1);
+        }
     </style>
 </head>
 
@@ -1005,6 +1069,25 @@ if ($is_print) {
                                         <i class="fas fa-chevron-down" style="color: #475569;"></i>
                                     </div>
                                     <div id="dokumentasi-content" class="form-section-content">
+                                        <?php if (!empty($dokumentasi_files)): ?>
+                                            <label class="hint existing-label" style="display:block; margin-bottom:5px; font-weight:bold;">Foto yang sudah diupload:</label>
+                                            <div class="existing-photos" id="existingDokGallery">
+                                                <?php foreach ($dokumentasi_files as $idx => $f):
+                                                    $imgVal = $f;
+                                                    if (isset($is_loaded_from_archive) && $is_loaded_from_archive && (strpos($f, 'arsip/') !== 0) && (strpos($f, 'uploads/') !== 0)) {
+                                                        $imgVal = 'arsip/' . ($folder ?? '') . '/' . $f;
+                                                    }
+                                                    // Build display path - tanpa ../ karena diload via index.php di root
+                                                    $imgSrc = (strpos($imgVal, '/') === false) ? 'uploads/dokumentasi/' . $imgVal : $imgVal;
+                                                ?>
+                                                    <div class="existing-photo-item" data-file="<?= htmlspecialchars($imgVal) ?>">
+                                                        <img src="<?= htmlspecialchars($imgSrc) ?>" alt="Dokumentasi <?= $idx + 1 ?>" title="<?= htmlspecialchars(basename($imgVal)) ?>">
+                                                        <button type="button" class="btn-remove" onclick="removeExistingFile(this)" title="Hapus foto ini">&times;</button>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        <?php endif; ?>
+
                                         <label class="hint" style="display:block; margin-bottom:8px;">Unggah Foto (Max 4)</label>
 
                                         <!-- Custom File Input -->
@@ -1014,7 +1097,7 @@ if ($is_print) {
                                             </label>
                                             <span id="fileCount" class="hint">Belum ada file dipilih</span>
                                         </div>
-                                        <input type="file" name="dokumentasi[]" id="inputDokumentasi" multiple accept="image/png, image/jpeg, image/jpg" onchange="previewImages()" style="display: none;">
+                                        <input type="file" name="dokumentasi[]" id="inputDokumentasi" multiple accept="image/png, image/jpeg, image/jpg" style="display: none;">
 
                                         <p class="hint" style="margin-top: 8px;">Format: JPG, PNG. Disarankan rasio landscape. Maksimal 4 foto.</p>
                                     </div>
@@ -1027,6 +1110,25 @@ if ($is_print) {
                                         <i class="fas fa-chevron-down" style="color: #475569;"></i>
                                     </div>
                                     <div id="absensi-content" class="form-section-content">
+                                        <?php if (!empty($absensi_files)): ?>
+                                            <label class="hint existing-label" style="display:block; margin-bottom:5px; font-weight:bold;">Foto absensi yang sudah diupload:</label>
+                                            <div class="existing-photos" id="existingAbsGallery">
+                                                <?php foreach ($absensi_files as $idx => $f):
+                                                    $imgVal = $f;
+                                                    if (isset($is_loaded_from_archive) && $is_loaded_from_archive && (strpos($f, 'arsip/') !== 0) && (strpos($f, 'uploads/') !== 0)) {
+                                                        $imgVal = 'arsip/' . ($folder ?? '') . '/' . $f;
+                                                    }
+                                                    // Build display path - tanpa ../ karena diload via index.php di root
+                                                    $imgSrc = (strpos($imgVal, '/') === false) ? 'uploads/absensi/' . $imgVal : $imgVal;
+                                                ?>
+                                                    <div class="existing-photo-item" data-file="<?= htmlspecialchars($imgVal) ?>">
+                                                        <img src="<?= htmlspecialchars($imgSrc) ?>" alt="Absensi <?= $idx + 1 ?>" title="<?= htmlspecialchars(basename($imgVal)) ?>">
+                                                        <button type="button" class="btn-remove" onclick="removeExistingFile(this)" title="Hapus foto ini">&times;</button>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        <?php endif; ?>
+
                                         <label class="hint" style="display:block; margin-bottom:15px; font-weight: bold;">Unggah Bukti Absensi</label>
 
                                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
@@ -1047,7 +1149,7 @@ if ($is_print) {
                                             <span id="fileCountAbsensi" class="hint">Belum ada file dipilih</span>
                                         </div>
 
-                                        <input type="file" name="absensi[]" id="inputAbsensi" multiple accept="image/png, image/jpeg, image/jpg" onchange="previewImages()" style="display: none;">
+                                        <input type="file" name="absensi[]" id="inputAbsensi" multiple accept="image/png, image/jpeg, image/jpg" style="display: none;">
 
                                         <p class="hint" style="margin-top: 8px; text-align: right;">Format: JPG, PNG. Disarankan rasio landscape. Maksimal 2 foto.</p>
                                     </div>
@@ -1234,6 +1336,98 @@ if ($is_print) {
                 }
 
                 /* =========================
+                   REMOVE EXISTING PHOTO
+                ========================= */
+                function removeExistingFile(btn) {
+                    if (!confirm('Hapus foto ini? Perubahan akan tersimpan saat klik Simpan.')) return;
+
+                    // 1. Get the file value from data attribute
+                    const item = btn.closest('.existing-photo-item');
+                    const fileValue = item ? item.getAttribute('data-file') : null;
+
+                    // 2. Determine type (dokumentasi or absensi) by checking parent gallery
+                    const gallery = item ? item.parentElement : null;
+                    const isDok = gallery && gallery.id === 'existingDokGallery';
+
+                    // 3. Remove from server arrays (for preview sync)
+                    if (fileValue) {
+                        if (isDok && window.serverDocFiles) {
+                            window.serverDocFiles = window.serverDocFiles.filter(function(f) {
+                                return f !== fileValue;
+                            });
+                        } else if (window.serverAbsFiles) {
+                            window.serverAbsFiles = window.serverAbsFiles.filter(function(f) {
+                                return f !== fileValue;
+                            });
+                        }
+                    }
+
+                    // 4. Remove the thumbnail with animation
+                    if (item) {
+                        item.style.transition = 'opacity 0.3s, transform 0.3s';
+                        item.style.opacity = '0';
+                        item.style.transform = 'scale(0.8)';
+                        setTimeout(function() {
+                            item.remove();
+
+                            // If gallery is now empty, remove it and label
+                            if (gallery && gallery.children.length === 0) {
+                                const label = gallery.previousElementSibling;
+                                if (label && label.classList.contains('existing-label')) label.remove();
+                                gallery.remove();
+                            }
+                        }, 300);
+                    }
+
+                    // 5. Remove the matching hidden input by value
+                    if (fileValue) {
+                        const form = document.getElementById('notulenForm');
+                        const allHidden = form.querySelectorAll('input[type="hidden"]');
+                        allHidden.forEach(function(inp) {
+                            if (inp.value === fileValue) {
+                                inp.remove();
+                            }
+                        });
+                    }
+
+                    // 6. Refresh preview panel
+                    previewImages();
+                }
+
+                /* =========================
+                   REMOVE NEW UPLOAD PHOTO
+                ========================= */
+                function removeNewUpload(type, btn) {
+                    if (!confirm('Hapus foto baru ini?')) return;
+
+                    // Clear the file input
+                    const inputId = type === 'dokumentasi' ? 'inputDokumentasi' : 'inputAbsensi';
+                    const fileInput = document.getElementById(inputId);
+                    if (fileInput) fileInput.value = '';
+
+                    // Remove the thumbnail
+                    const item = btn.closest('.existing-photo-item');
+                    if (item) {
+                        item.style.transition = 'opacity 0.3s, transform 0.3s';
+                        item.style.opacity = '0';
+                        item.style.transform = 'scale(0.8)';
+                        setTimeout(function() {
+                            const gallery = item.parentElement;
+                            item.remove();
+                            // If gallery has no more items, remove it
+                            if (gallery && gallery.querySelectorAll('.existing-photo-item').length === 0) {
+                                const label = gallery.previousElementSibling;
+                                if (label && label.classList.contains('existing-label')) label.remove();
+                                gallery.remove();
+                            }
+                        }, 300);
+                    }
+
+                    // Refresh preview
+                    previewImages();
+                }
+
+                /* =========================
                    NAVIGATION PREVIEW
                 ========================= */
                 let currentPage = 1;
@@ -1362,6 +1556,69 @@ if ($is_print) {
                     // Update Counts Logic to include Server files
                     if (allDocs.length > 0) countSpanDoc.textContent = allDocs.length + ' file (Total)';
                     if (countSpanAbs && allAbs.length > 0) countSpanAbs.textContent = allAbs.length + ' file (Total)';
+
+                    // --- RENDER NEW UPLOAD THUMBNAILS IN FORM GALLERY ---
+                    // Remove previously rendered new-upload thumbnails
+                    document.querySelectorAll('.new-upload-thumb').forEach(function(el) {
+                        el.remove();
+                    });
+
+                    // Dokumentasi: show new file thumbnails
+                    if (newDocs.length > 0) {
+                        let dokGallery = document.getElementById('existingDokGallery');
+                        // Create gallery container if it doesn't exist yet
+                        if (!dokGallery) {
+                            const dokContent = document.getElementById('dokumentasi-content');
+                            const label = document.createElement('label');
+                            label.className = 'hint existing-label';
+                            label.style.cssText = 'display:block; margin-bottom:5px; font-weight:bold;';
+                            label.textContent = 'Foto yang sudah diupload:';
+                            dokContent.insertBefore(label, dokContent.firstChild);
+                            dokGallery = document.createElement('div');
+                            dokGallery.className = 'existing-photos';
+                            dokGallery.id = 'existingDokGallery';
+                            label.after(dokGallery);
+                        }
+                        newDocs.forEach(function(file) {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                const div = document.createElement('div');
+                                div.className = 'existing-photo-item new-upload-thumb';
+                                div.innerHTML = '<img src="' + e.target.result + '" alt="Baru" title="' + file.name + '">' +
+                                    '<button type="button" class="btn-remove" onclick="removeNewUpload(\'dokumentasi\', this)" title="Hapus foto ini">&times;</button>';
+                                dokGallery.appendChild(div);
+                            };
+                            reader.readAsDataURL(file);
+                        });
+                    }
+
+                    // Absensi: show new file thumbnails
+                    if (newAbs.length > 0) {
+                        let absGallery = document.getElementById('existingAbsGallery');
+                        if (!absGallery) {
+                            const absContent = document.getElementById('absensi-content');
+                            const label = document.createElement('label');
+                            label.className = 'hint existing-label';
+                            label.style.cssText = 'display:block; margin-bottom:5px; font-weight:bold;';
+                            label.textContent = 'Foto absensi yang sudah diupload:';
+                            absContent.insertBefore(label, absContent.firstChild);
+                            absGallery = document.createElement('div');
+                            absGallery.className = 'existing-photos';
+                            absGallery.id = 'existingAbsGallery';
+                            label.after(absGallery);
+                        }
+                        newAbs.forEach(function(file) {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                const div = document.createElement('div');
+                                div.className = 'existing-photo-item new-upload-thumb';
+                                div.innerHTML = '<img src="' + e.target.result + '" alt="Baru" title="' + file.name + '">' +
+                                    '<button type="button" class="btn-remove" onclick="removeNewUpload(\'absensi\', this)" title="Hapus foto ini">&times;</button>';
+                                absGallery.appendChild(div);
+                            };
+                            reader.readAsDataURL(file);
+                        });
+                    }
 
                     // Navigate only if we added pages and are currently on page 1
                     // or if the user just uploaded something, switch to the new page?
@@ -1575,11 +1832,14 @@ if ($is_print) {
                 ========================= */
                 const tinyConfig = {
                     license_key: 'gpl',
-                    menubar: false,
+                    menubar: true, // [UPGRADE] Tampilkan Menu Bar ala Word
                     branding: false,
-                    statusbar: false,
-                    plugins: 'lists link table advlist',
-                    toolbar: 'bold italic underline | bullist numlist | indent_first',
+                    statusbar: true, // [UPGRADE] Tampilkan Status Bar
+                    plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount',
+                    toolbar: 'undo redo | blocks | ' +
+                        'bold italic underline strikethrough | alignleft aligncenter ' +
+                        'alignright alignjustify | bullist numlist outdent indent | ' +
+                        'removeformat | indent_first',
                     content_style: `
                         body { font-family: Arial, sans-serif; font-size: 11pt; }
                         .first-line-indent { text-indent: 40px; }
@@ -1749,16 +2009,22 @@ if ($is_print) {
                             let idValid = parseInt(cleanId);
 
                             if (!isNaN(idValid) && idValid > 0) {
-                                window.open(pdfUrlBase + '?id=' + idValid, '_blank');
-                                alert('Data berhasil disimpan! PDF akan terbuka di tab baru.');
-                                btn.innerText = originalText;
-                                btn.disabled = false;
+                                // Update ID di form supaya save berikutnya jadi UPDATE
+                                const inputId = form.querySelector('[name="id_undangan"]');
+                                if (inputId && inputId.value == 0) inputId.value = idValid;
+
+                                // Buka PDF di tab baru
+                                btn.innerText = 'Membuka PDF...';
+                                const tgl = form.querySelector('[name="p_tanggal"]')?.value || '';
+                                const pdfUrl = pdfUrlBase + '?id=' + idValid + '&tgl=' + encodeURIComponent(tgl);
+                                window.open(pdfUrl, '_blank');
                             } else {
-                                alert('Gagal menyimpan notulensi.\nResponse Asli: "' + result + '"\nParsed ID: ' + idValid);
-                                console.error('Server Response:', result);
-                                btn.innerText = originalText;
-                                btn.disabled = false;
+                                alert('Gagal menyimpan sebelum cetak PDF. Response: ' + idNotulen);
                             }
+
+                            // Reset button
+                            btn.innerText = originalText;
+                            btn.disabled = false;
                         })
                         .catch(err => {
                             alert('Terjadi kesalahan koneksi atau error sistem. Cek konsol browser.');

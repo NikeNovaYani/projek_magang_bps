@@ -19,6 +19,18 @@ function set_alert($msg, $type)
     echo "<script>window.onload = function() { showNotification('" . addslashes($msg) . "', '$type'); };</script>";
 }
 
+// Helper Recursive Delete
+function delete_folder_recursive($dir)
+{
+    if (!is_dir($dir)) return false;
+    $files = array_diff(scandir($dir), ['.', '..']);
+    foreach ($files as $file) {
+        $path = $dir . '/' . $file;
+        is_dir($path) ? delete_folder_recursive($path) : unlink($path);
+    }
+    return rmdir($dir);
+}
+
 // Handle form submit untuk membuat folder baru & Upload File Sekaligus
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['create_folder'])) {
 
@@ -134,17 +146,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_folder'])) {
     $folder_to_delete = $_POST['delete_folder'];
     if (is_dir($arsip_dir . $folder_to_delete)) {
         // Recursive Delete
-        function delete_folder_recursive($dir)
-        {
-            if (!is_dir($dir)) return false;
-            $files = array_diff(scandir($dir), ['.', '..']);
-            foreach ($files as $file) {
-                $path = $dir . '/' . $file;
-                is_dir($path) ? delete_folder_recursive($path) : unlink($path);
-            }
-            return rmdir($dir);
-        }
-
         if (delete_folder_recursive($arsip_dir . $folder_to_delete)) {
             set_alert('Arsip berhasil dihapus permanen.', 'success');
         } else {
@@ -340,6 +341,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['hapus_otomatis'])) {
     $id = $_POST['id_hapus']; // id_u (sama dengan id_n)
 
     if ($id > 0) {
+        // ... (existing logic) ...
         // 1. Hapus File Undangan
         $q_u = mysqli_query($koneksi, "SELECT undangan_pdf FROM undangan WHERE id_u = '$id'");
         if ($d_u = mysqli_fetch_assoc($q_u)) {
@@ -373,6 +375,59 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['hapus_otomatis'])) {
             set_alert("Arsip (Notulensi/Undangan) berhasil dihapus permanen.", 'success');
         } else {
             set_alert("Gagal menghapus data: " . mysqli_error($koneksi), 'error');
+        }
+    }
+}
+
+// === HANDLE DELETE MANUAL ARCHIVE (FOLDER) ===
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['hapus_manual'])) {
+    $id = $_POST['id_hapus'];
+
+    if ($id > 0) {
+        // 1. Ambil path folder dari salah satu file
+        $q = mysqli_query($koneksi, "SELECT file_undangan, file_notulensi, file_absensi FROM arsip_manual WHERE id_am = '$id'");
+        if ($row = mysqli_fetch_assoc($q)) {
+            $folder_path = "";
+
+            // Coba update path logic: file biasanya di arsip/TGL_NAMA/TYPE/file.pdf
+            // Jadi mundur 2 level: dirname(dirname(path))
+            // Atau cukup ambil dirname kalau formatnya lain.
+            // Konvensi create: $folder_path . $target_sub . '/' . basename($original_name);
+            // Jadi: arsip/FOLDER/SUB/FILE
+
+            foreach (['file_undangan', 'file_notulensi', 'file_absensi'] as $col) {
+                if (!empty($row[$col])) {
+                    $path = $row[$col];
+                    // Cek jika path mengandung 'arsip/'
+                    if (strpos($path, 'arsip/') !== false) {
+                        // Ambil folder induk (FOLDER)
+                        // path: arsip/2023_Kegiatan/undangan/file.pdf
+                        // dirname: arsip/2023_Kegiatan/undangan
+                        // dirname(dirname): arsip/2023_Kegiatan
+                        $folder_path = dirname(dirname($path));
+                        // Pastikan folder_path merujuk ke dalam 'arsip/' agar aman
+                        if (strpos($folder_path, 'arsip/') === 0 && is_dir($folder_path)) {
+                            break;
+                        } else {
+                            $folder_path = ""; // Reset if suspicious
+                        }
+                    }
+                }
+            }
+
+            // 2. Hapus Folder Fisik (jika ketemu)
+            if (!empty($folder_path) && is_dir($folder_path)) {
+                delete_folder_recursive($folder_path);
+            }
+
+            // 3. Hapus Database
+            if (mysqli_query($koneksi, "DELETE FROM arsip_manual WHERE id_am = '$id'")) {
+                set_alert("Arsip Manual berhasil dihapus permanen.", 'success');
+            } else {
+                set_alert("Gagal menghapus data DB: " . mysqli_error($koneksi), 'error');
+            }
+        } else {
+            set_alert("Data arsip tidak ditemukan.", 'error');
         }
     }
 }
@@ -638,7 +693,7 @@ $folders = get_folders($arsip_dir);
         }
 
         .form-control:focus {
-            border-color: #1976d2;
+            border-color: #0264c5ff;
             outline: none;
         }
 
@@ -1003,6 +1058,18 @@ $folders = get_folders($arsip_dir);
                 </form>
             </div>
 
+            <!-- SEARCH BAR -->
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="Cari nama kegiatan atau rapat..." onkeyup="filterArchives()">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+
+            <!-- NO RESULTS MESSAGE -->
+            <div id="noResults" class="no-results">
+                <i class="fas fa-search" style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;"></i>
+                <p>Arsip tidak ditemukan. Coba kata kunci lain.</p>
+            </div>
+
             <!-- LIST ARSIP -->
             <div class="archive-grid">
                 <?php
@@ -1029,11 +1096,11 @@ $folders = get_folders($arsip_dir);
                                 <form method="post" onsubmit="return confirm('Hapus arsip ini beserta seluruh isinya?');" style="display:inline;">
                                     <input type="hidden" name="id_hapus" value="<?= $row['id_referensi'] ?>">
                                     <?php if ($isManual): ?>
-                                        <button type="submit" name="hapus_manual" title="Hapus Arsip Manual" style="border:none; background:none; cursor:pointer; color:#ef4444;">
+                                        <button type="submit" name="hapus_manual" title="Hapus Folder" style="border:none; background:none; cursor:pointer; color:#ef4444;">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     <?php else: ?>
-                                        <button type="submit" name="hapus_otomatis" title="Hapus Arsip Otomatis" style="border:none; background:none; cursor:pointer; color:#ef4444;">
+                                        <button type="submit" name="hapus_otomatis" title="Hapus Folder" style="border:none; background:none; cursor:pointer; color:#ef4444;">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     <?php endif; ?>
@@ -1066,12 +1133,8 @@ $folders = get_folders($arsip_dir);
                                             <i class="fas fa-envelope"></i> Undangan
                                         </a>
                                         <!-- Edit Button -->
-                                        <?php if ($isManual): ?>
-                                            <button type="button" class="btn-edit-mini" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'file_undangan', 'manual')" title="Ganti File" style="background:none; border:none; cursor:pointer; color:#f59e0b;">
-                                                <i class="fas fa-sync-alt"></i>
-                                            </button>
-                                        <?php else: ?>
-                                            <a href="index.php?page=undangan&id=<?= $row['id_referensi'] ?>" class="btn-edit-mini" title="Edit Data" style="color:#f59e0b;">
+                                        <?php if (!$isManual): ?>
+                                            <a href="index.php?page=undangan&id=<?= $row['id_referensi'] ?>" class="btn-edit-mini" title="Edit Undangan" style="color:#29b6f6;">
                                                 <i class="fas fa-pencil-alt"></i>
                                             </a>
                                         <?php endif; ?>
@@ -1093,14 +1156,17 @@ $folders = get_folders($arsip_dir);
                                 </div>
                                 <div class="file-right">
                                     <?php if ($isManual): ?>
-                                        <button type="button" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'file_undangan', 'manual')" title="Upload File" style="border:none; background:none; cursor:pointer; color:#2563eb;">
+                                        <a href="index.php?page=undangan&nama=<?= urlencode($row['nama_kegiatan']) ?>" title="Buat Undangan" style="border:none; background:none; cursor:pointer; color:#29b6f6; text-decoration:none; margin-right:5px;">
+                                            <i class="fas fa-pencil-alt"></i>
+                                        </a>
+                                        <button type="button" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'file_undangan', 'manual')" title="Upload File" style="border:none; background:none; cursor:pointer; color:#1565c0;">
                                             <i class="fas fa-upload"></i>
                                         </button>
                                     <?php else: ?>
-                                        <a href="index.php?page=undangan&id=<?= $row['id_referensi'] ?>" class="btn-edit-mini" title="Buat Undangan" style="color:#2563eb; margin-right:5px; text-decoration:none;">
+                                        <a href="index.php?page=undangan&id=<?= $row['id_referensi'] ?>" class="btn-edit-mini" title="Buat Undangan" style="color:#29b6f6; margin-right:5px; text-decoration:none;">
                                             <i class="fas fa-pencil-alt"></i>
                                         </a>
-                                        <button type="button" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'undangan', 'otomatis')" title="Upload File" style="border:none; background:none; cursor:pointer; color:#2563eb;">
+                                        <button type="button" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'undangan', 'otomatis')" title="Upload File" style="border:none; background:none; cursor:pointer; color:#1565c0;">
                                             <i class="fas fa-upload"></i>
                                         </button>
                                     <?php endif; ?>
@@ -1122,12 +1188,8 @@ $folders = get_folders($arsip_dir);
                                             <i class="fas fa-file-alt"></i> Notulensi
                                         </a>
                                         <!-- Edit Button -->
-                                        <?php if ($isManual): ?>
-                                            <button type="button" class="btn-edit-mini" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'file_notulensi', 'manual')" title="Ganti File" style="background:none; border:none; cursor:pointer; color:#f59e0b;">
-                                                <i class="fas fa-sync-alt"></i>
-                                            </button>
-                                        <?php else: ?>
-                                            <a href="index.php?page=notulensi&id=<?= $row['id_referensi'] ?>" class="btn-edit-mini" title="Edit Data" style="color:#f59e0b;">
+                                        <?php if (!$isManual): ?>
+                                            <a href="index.php?page=notulensi&id=<?= $row['id_referensi'] ?>" class="btn-edit-mini" title="Edit Notulensi" style="color:#1976d2;">
                                                 <i class="fas fa-pencil-alt"></i>
                                             </a>
                                         <?php endif; ?>
@@ -1146,7 +1208,7 @@ $folders = get_folders($arsip_dir);
                                     </form>
                                 <?php else: ?>
                                     <?php if (!$isManual && $row['ada_undangan']): ?>
-                                        <a href="index.php?page=notulensi&id=<?= $row['id_referensi'] ?>" class="chip active" style="background:#eab308; color:white;">
+                                        <a href="index.php?page=notulensi&id=<?= $row['id_referensi'] ?>" class="chip active" style="background: linear-gradient(135deg, #1976d2, #2196f3); color:white;">
                                             <i class="fas fa-plus"></i> Buat Notulensi
                                         </a>
                                     <?php else: ?>
@@ -1155,12 +1217,15 @@ $folders = get_folders($arsip_dir);
                                 </div>
                                 <div class="file-right">
                                     <?php if ($isManual): ?>
-                                        <button type="button" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'file_notulensi', 'manual')" title="Upload File" style="border:none; background:none; cursor:pointer; color:#2563eb;">
+                                        <a href="index.php?page=notulensi&nama=<?= urlencode($row['nama_kegiatan']) ?>" title="Buat Notulensi" style="border:none; background:none; cursor:pointer; color:#1976d2; text-decoration:none; margin-right:5px;">
+                                            <i class="fas fa-pencil-alt"></i>
+                                        </a>
+                                        <button type="button" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'file_notulensi', 'manual')" title="Upload File" style="border:none; background:none; cursor:pointer; color:#1565c0;">
                                             <i class="fas fa-upload"></i>
                                         </button>
                                     <?php else: ?>
                                         <?php if (!$isManual && $row['ada_undangan']): ?>
-                                            <button type="button" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'notulensi', 'otomatis')" title="Upload File" style="border:none; background:none; cursor:pointer; color:#2563eb;">
+                                            <button type="button" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'notulensi', 'otomatis')" title="Upload File" style="border:none; background:none; cursor:pointer; color:#1565c0;">
                                                 <i class="fas fa-upload"></i>
                                             </button>
                                         <?php endif; ?>
@@ -1183,12 +1248,7 @@ $folders = get_folders($arsip_dir);
                                         <a href="<?= $linkA ?>" target="_blank" class="chip active">
                                             <i class="fas fa-user-check"></i> Absensi
                                         </a>
-                                        <!-- Edit Button -->
-                                        <?php if ($isManual): ?>
-                                            <button type="button" class="btn-edit-mini" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'file_absensi', 'manual')" title="Ganti File" style="background:none; border:none; cursor:pointer; color:#f59e0b;">
-                                                <i class="fas fa-sync-alt"></i>
-                                            </button>
-                                        <?php endif; ?>
+
 
                                 </div>
                                 <!-- Delete File Button -->
@@ -1207,18 +1267,23 @@ $folders = get_folders($arsip_dir);
                                 </div>
                                 <div class="file-right">
                                     <?php if ($isManual): ?>
-                                        <button type="button" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'file_absensi', 'manual')" title="Upload File" style="border:none; background:none; cursor:pointer; color:#2563eb;">
+                                        <a href="index.php?page=absensi&nama=<?= urlencode($row['nama_kegiatan']) ?>" title="Buat Absensi" style="border:none; background:none; cursor:pointer; color:#29b6f6; text-decoration:none; margin-right:5px;">
+                                            <i class="fas fa-pencil-alt"></i>
+                                        </a>
+                                        <button type="button" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'file_absensi', 'manual')" title="Upload File" style="border:none; background:none; cursor:pointer; color:#1565c0;">
                                             <i class="fas fa-upload"></i>
                                         </button>
                                     <?php else: ?>
-                                        <button type="button" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'absensi', 'otomatis')" title="Upload File" style="border:none; background:none; cursor:pointer; color:#2563eb;">
+                                        <a href="index.php?page=absensi&id=<?= $row['id_referensi'] ?>" class="btn-edit-mini" title="Buat Absensi" style="color:#29b6f6; margin-right:5px; text-decoration:none;">
+                                            <i class="fas fa-pencil-alt"></i>
+                                        </a>
+                                        <button type="button" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'absensi', 'otomatis')" title="Upload File" style="border:none; background:none; cursor:pointer; color:#1565c0;">
                                             <i class="fas fa-upload"></i>
                                         </button>
                                     <?php endif; ?>
                                 <?php endif; ?>
                                 </div>
                             </div>
-
                         </div>
                     </div>
 

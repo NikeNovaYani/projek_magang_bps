@@ -181,11 +181,36 @@ $kesimpulan = fixIndent($data['kesimpulan'] ?? '');
         font-weight: bold;
     }
 
+    /* LIST STYLE FIX FOR TINYMCE */
+    ol {
+        list-style-type: decimal;
+    }
+
+    /* Support legacy attributes and inline styles */
+    ol[type="a"],
+    ol[style*="lower-alpha"] {
+        list-style-type: lower-alpha !important;
+    }
+
+    ol[type="A"],
+    ol[style*="upper-alpha"] {
+        list-style-type: upper-alpha !important;
+    }
+
+    ol[type="i"],
+    ol[style*="lower-roman"] {
+        list-style-type: lower-roman !important;
+    }
+
+    ol[type="I"],
+    ol[style*="upper-roman"] {
+        list-style-type: upper-roman !important;
+    }
+
     p.first-line-indent,
     .first-line-indent {
         text-indent: 40px !important;
         margin-left: 0 !important;
-        /* Ensure no margin overrides it */
     }
 </style>
 
@@ -222,9 +247,9 @@ $kesimpulan = fixIndent($data['kesimpulan'] ?? '');
 </table>
 
 <?php
-/* ================= PEMECAHAN HALAMAN ================= */
-$limitFirst  = 980;
-$limitNext   = 2400;
+/* ================= HALAMAN RESUME (AUTO PAGINATION) ================= */
+$limitFirst  = 860;  // Dikurangi agar halaman pertama tidak penuh sesak (ada header)
+$limitNext   = 2100; // Ditambah agar halaman berikutnya lebih optimal
 
 $pages = [];
 $current = '';
@@ -333,7 +358,7 @@ $p_notulis = $data['p_notulis'] ?? 'Nurine Kristy';
 
     <?php foreach ($chunks as $chunk): ?>
         <div class="page-break"></div>
-        <h3 style="text-align: center; margin-bottom: 20px;">DOKUMENTASI <?= count($chunks) > 1 && $docPage > 1 ? '(Lanjutan)' : '' ?></h3>
+        <h3 style="text-align: center; margin-bottom: 20px;">DOKUMENTASI</h3>
 
         <div style="text-align: center;">
             <?php foreach ($chunk as $docPath): ?>
@@ -360,7 +385,7 @@ $p_notulis = $data['p_notulis'] ?? 'Nurine Kristy';
 
     <?php foreach ($data['absensi'] as $absPath): ?>
         <div class="page-break"></div>
-        <h3 style="text-align: center; margin-bottom: 20px;">DAFTAR HADIR <?= count($data['absensi']) > 1 && $docPage > 1 ? '(Lanjutan)' : '' ?></h3>
+        <h3 style="text-align: center; margin-bottom: 20px;">DAFTAR HADIR</h3>
 
         <div style="text-align: center;">
             <?php

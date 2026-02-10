@@ -1,5 +1,9 @@
 <?php
-session_start();
+// Mencegah akses langsung ke file ini
+if (basename($_SERVER['PHP_SELF']) === basename(__FILE__)) {
+    header("Location: ../index.php?page=absensi");
+    exit();
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -334,7 +338,10 @@ session_start();
                         <div style="display: flex; flex-direction: column; gap: 20px; align-items: center;">
                             <?php foreach ($absensi_photos as $img): ?>
                                 <div style="background: #fff; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                                    <img src="<?= htmlspecialchars($img) ?>" style="max-width: 100%; height: auto; max-height: 400px; border-radius: 4px;">
+                                    <?php
+                                    $imgPath = (strpos($img, '/') === false) ? 'uploads/absensi/' . $img : $img;
+                                    ?>
+                                    <img src="<?= htmlspecialchars($imgPath) ?>" style="max-width: 100%; height: auto; max-height: 400px; border-radius: 4px;">
                                 </div>
                             <?php endforeach; ?>
                         </div>

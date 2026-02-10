@@ -42,3 +42,9 @@ Trace:
 #4 C:\xampp\htdocs\projek_magang_bps\pdf\generate_notulensi.php(31): Mpdf\Mpdf->WriteHTML(' <table class="...')
 #5 {main}
 
+2026-02-10 11:09:34 ERROR in generate_notulensi.php:
+Message: syntax error, unexpected token "<", expecting end of file
+File: C:\xampp\htdocs\projek_magang\pdf\template_notulensi.php on line 225
+Trace:
+#0 {main}
+

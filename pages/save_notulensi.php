@@ -15,6 +15,7 @@ $id_notulensi   = $_POST['id_n'] ?? 0; // ID jika mode edit (biasanya sama denga
 $id_undangan    = $_POST['id_undangan'] ?? 0; // Wajib ada untuk relasi!
 
 $nama_kegiatan  = mysqli_real_escape_string($koneksi, $_POST['nama_kegiatan'] ?? '');
+$active_topik   = mysqli_real_escape_string($koneksi, $_POST['topik'] ?? ''); // [BARU] Ambil Topik
 $unit_kerja     = mysqli_real_escape_string($koneksi, $_POST['unit_kerja'] ?? '');
 $hari_tanggal   = mysqli_real_escape_string($koneksi, $_POST['tanggal'] ?? date('Y-m-d'));
 $waktu_mulai    = mysqli_real_escape_string($koneksi, $_POST['pukul_mulai'] ?? '');
@@ -27,9 +28,9 @@ $isi_pembahasan = mysqli_real_escape_string($koneksi, $_POST['pembahasan'] ?? ''
 $isi_kesimpulan = mysqli_real_escape_string($koneksi, $_POST['kesimpulan'] ?? '');
 
 // Data Tanda Tangan
-$ttd_tempat     = mysqli_real_escape_string($koneksi, $_POST['ttd_tempat'] ?? 'Depok');
-$ttd_tanggal    = mysqli_real_escape_string($koneksi, $_POST['ttd_tanggal'] ?? date('Y-m-d'));
-$ttd_nama       = mysqli_real_escape_string($koneksi, $_POST['ttd_nama'] ?? '');
+$ttd_tempat     = mysqli_real_escape_string($koneksi, $_POST['p_tempat'] ?? ($_POST['ttd_tempat'] ?? 'Depok'));
+$ttd_tanggal    = mysqli_real_escape_string($koneksi, $_POST['p_tanggal'] ?? ($_POST['ttd_tanggal'] ?? date('Y-m-d')));
+$ttd_nama       = mysqli_real_escape_string($koneksi, $_POST['p_notulis'] ?? ($_POST['ttd_nama'] ?? ''));
 
 // 3. Handle Upload File (Dokumentasi & Absensi)
 // Fungsi helper upload sederhana
@@ -106,7 +107,7 @@ if ($id_undangan > 0) {
     if (mysqli_num_rows($cek) > 0) {
         // === UPDATE ===
         $query = "UPDATE notulensi SET 
-                  nama_kegiatan='$nama_kegiatan', unit_kerja='$unit_kerja', tanggal_rapat='$hari_tanggal',
+                  nama_kegiatan='$nama_kegiatan', topik='$active_topik', unit_kerja='$unit_kerja', tanggal_rapat='$hari_tanggal',
                   waktu_mulai='$waktu_mulai', waktu_selesai='$waktu_selesai', tempat='$tempat',
                   pimpinan_rapat='$pimpinan', peserta='$peserta',
                   isi_pembukaan='$isi_pembukaan', isi_pembahasan='$isi_pembahasan', isi_kesimpulan='$isi_kesimpulan',
@@ -116,11 +117,11 @@ if ($id_undangan > 0) {
     } else {
         // === INSERT ===
         $query = "INSERT INTO notulensi 
-                  (id_n, nama_kegiatan, unit_kerja, tanggal_rapat, waktu_mulai, waktu_selesai, tempat, 
+                  (id_n, nama_kegiatan, topik, unit_kerja, tanggal_rapat, waktu_mulai, waktu_selesai, tempat, 
                    pimpinan_rapat, peserta, isi_pembukaan, isi_pembahasan, isi_kesimpulan, 
                    tempat_pembuatan, tanggal_pembuatan, nama_notulis, foto_dokumentasi, foto_absensi)
                   VALUES 
-                  ('$id_undangan', '$nama_kegiatan', '$unit_kerja', '$hari_tanggal', '$waktu_mulai', '$waktu_selesai', '$tempat',
+                  ('$id_undangan', '$nama_kegiatan', '$active_topik', '$unit_kerja', '$hari_tanggal', '$waktu_mulai', '$waktu_selesai', '$tempat',
                    '$pimpinan', '$peserta', '$isi_pembukaan', '$isi_pembahasan', '$isi_kesimpulan',
                    '$ttd_tempat', '$ttd_tanggal', '$ttd_nama', '$final_docs_json', '$final_abs_json')";
     }

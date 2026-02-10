@@ -10,7 +10,16 @@ $lampiran   = $_POST['f_lampiran'] ?? '-';
 $hal        = $d['hal'] ?? 'Undangan Rapat';
 $tglsurat   = $d['tanggal'] ?? date('Y-m-d'); // Tanggal pembuatan surat
 $kepada     = $d['kepada'] ?? 'Bapak/Ibu Terlampir';
-$isi      = $_POST['f_isi']      ?? 'Sehubungan dengan menjelang akan berakhirnya tahun anggaran 2025, Kepala BPS Kota Depok mengundang seluruh Ketua Tim dan PPK BPS Kota Depok untuk hadir dalam rapat yang akan diselenggarakan pada';
+$isi      = $d['isi'] ?? ($_POST['f_isi'] ?? 'Sehubungan dengan menjelang akan berakhirnya tahun anggaran 2025, Kepala BPS Kota Depok mengundang seluruh Ketua Tim dan PPK BPS Kota Depok untuk hadir dalam rapat yang akan diselenggarakan pada');
+
+// [BARU] Pastikan diakhiri dengan titik dua ( : ) sesuai request
+$isi = trim($isi);
+if (substr($isi, -1) === '.') {
+    $isi = substr($isi, 0, -1); // Hapus titik di akhir jika ada
+}
+if (substr($isi, -1) !== ':') {
+    $isi .= ' :';
+}
 // Data Acara
 $hari       = $d['tanggal_acara'] ?? date('Y-m-d');
 $waktu      = ($d['pukul_mulai'] ?? '09:00') . ' - ' . ($d['pukul_selesai'] ?? 'Selesai');
@@ -241,7 +250,12 @@ if (!function_exists('formatWaktu')) {
                     <td style="vertical-align: top;">
                         <table style="width: 100%; border-collapse: collapse; border: none;">
                             <?php
-                            $daftar_penerima = explode("\n", $kepada);
+                            // 1. Ganti literal '\r\n', '\n', '\r' (teks, bukan newline asli) menjadi newline asli
+                            $kepada_clean = preg_replace('/\\\\r\\\\n|\\\\n|\\\\r/', "\n", $kepada);
+                            // 2. Normalisasi newline asli (\r\n atau \r) menjadi \n
+                            $kepada_clean = str_replace(array("\r\n", "\r"), "\n", $kepada_clean);
+                            // 3. Pecah berdasarkan \n
+                            $daftar_penerima = explode("\n", $kepada_clean);
                             foreach ($daftar_penerima as $penerima) {
                                 $posisi_titik = strpos($penerima, ".");
 
