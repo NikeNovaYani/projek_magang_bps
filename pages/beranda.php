@@ -191,12 +191,116 @@ if (basename($_SERVER['PHP_SELF']) === basename(__FILE__)) {
       font-size: 2em;
     }
   }
+
+  /* ===== CTA HERO SECTION ===== */
+  .cta-hero {
+    background: linear-gradient(135deg, #1976d2, #42a5f5);
+    border-radius: 15px;
+    padding: 40px;
+    margin-bottom: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: white;
+    box-shadow: 0 10px 20px rgba(25, 118, 210, 0.2);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Decorative circle */
+  .cta-hero::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 200px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+  }
+
+  .cta-content {
+    flex: 1;
+    padding-right: 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cta-content h2 {
+    margin: 0 0 10px 0;
+    font-size: 2em;
+    font-weight: 700;
+  }
+
+  .cta-content p {
+    margin: 0 0 25px 0;
+    font-size: 1.1em;
+    opacity: 0.9;
+    max-width: 600px;
+  }
+
+  .cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: white;
+    color: #1976d2;
+    padding: 12px 30px;
+    border-radius: 50px;
+    font-weight: bold;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .cta-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    background: #f0f7ff;
+  }
+
+  .cta-icon {
+    font-size: 80px;
+    color: rgba(255, 255, 255, 0.2);
+    padding-right: 40px;
+  }
+
+  @media (max-width: 768px) {
+    .cta-hero {
+      flex-direction: column;
+      text-align: center;
+      padding: 30px 20px;
+    }
+
+    .cta-content {
+      padding-right: 0;
+      margin-bottom: 20px;
+    }
+
+    .cta-icon {
+      display: none;
+    }
+  }
 </style>
 
 <!-- HEADER -->
 <div class="header">
   <h1>Selamat Datang di <span style="font-style: italic; font-weight: 700; color: #1976d2;">SI UANG</span></h1>
-  <p>Sistem Informasi terintegrasi untuk pengelolaan <b>Undangan, Absensi, Notulensi, dan Gudang Rapat</b> dalam satu platform.</p>
+  <p>Sistem Informasi <b>Undangan, Absensi, Notulensi, dan Gudang Rapat</b>.</p>
+</div>
+
+<!-- CTA HERO SECTION -->
+<div class="cta-hero">
+  <div class="cta-content">
+    <h2>Mulai Rapat Baru</h2>
+    <p>Buat arsip rapat baru, siapkan undangan, notulensi, dan absensi dengan mudah dalam satu langkah terintegrasi.</p>
+    <a href="index.php?page=undangan" class="cta-btn">
+      <i class="fas fa-plus-circle"></i> Buat Sekarang
+    </a>
+  </div>
+  <div class="cta-icon">
+    <i class="fas fa-calendar-plus"></i>
+  </div>
 </div>
 
 <!-- FEATURES -->

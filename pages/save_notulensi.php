@@ -87,7 +87,7 @@ if ($id_undangan == 0) {
                hari_tanggal_acara, waktu_acara, tempat_acara, agenda, undangan_pdf)
               VALUES 
               ('$nama_kegiatan', '$nomor_surat_dummy', '$perihal_dummy', '$kepada_dummy', '$tanggal_surat_dummy', 
-               '$hari_tanggal', '$waktu_acara_dummy', '$tempat', '$isi_pembahasan', NULL)";
+               '$hari_tanggal', '$waktu_acara_dummy', '$tempat', 'Pembahasan Optimalisasi Anggaran', NULL)";
 
     if (mysqli_query($koneksi, $q_new_undangan)) {
         // Ambil ID yang baru dibuat

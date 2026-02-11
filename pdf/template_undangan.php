@@ -301,11 +301,13 @@ if (!function_exists('formatWaktu')) {
                 <td>:</td>
                 <td><?= nl2br(htmlspecialchars($tempat)) ?></td>
             </tr>
+
             <tr>
                 <td>Agenda</td>
                 <td>:</td>
                 <td><?= nl2br(htmlspecialchars($agenda)) ?></td>
             </tr>
+
         </table>
 
         <p style="text-indent: 50px; text-align: justify; margin-top: 20px;">

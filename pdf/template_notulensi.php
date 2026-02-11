@@ -248,8 +248,8 @@ $kesimpulan = fixIndent($data['kesimpulan'] ?? '');
 
 <?php
 /* ================= HALAMAN RESUME (AUTO PAGINATION) ================= */
-$limitFirst  = 860;  // Dikurangi agar halaman pertama tidak penuh sesak (ada header)
-$limitNext   = 2100; // Ditambah agar halaman berikutnya lebih optimal
+$limitFirst  = 1000;  // Dikurangi agar halaman pertama tidak penuh sesak (ada header)
+$limitNext   = 1500; // Ditambah agar halaman berikutnya lebih optimal
 
 $pages = [];
 $current = '';

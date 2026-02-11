@@ -364,6 +364,11 @@ if ($is_print) {
     <script src="/projek_magang/tinymce/js/tinymce/tinymce.min.js" referrerpolicy="origin"></script>
 
     <style>
+        /* Sembunyikan Link Promosi TinyMCE */
+        .tox-promotion {
+            display: none !important;
+        }
+
         :root {
             --bg: #f4f7fb;
             --card: #ffffff;
@@ -695,7 +700,8 @@ if ($is_print) {
 
         .sidebar ul {
             /* kotak isi */
-            list-style: none;
+            list-styl
+            e: none;
             padding: 0;
             /* kotak teks */
             margin: 0;
@@ -1866,6 +1872,8 @@ if ($is_print) {
                         });
                     }
                 };
+
+
 
                 if (typeof tinymce !== 'undefined') {
                     tinymce.init({

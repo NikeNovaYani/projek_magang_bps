@@ -980,12 +980,81 @@ $folders = get_folders($arsip_dir);
 
         .chip.active:hover {
             background-color: #e2e8f0;
+        }
 
-            .chip.disabled {
-                background-color: #f8fafc;
-                color: #cbd5e1;
-                cursor: not-allowed;
-            }
+        .chip.disabled {
+            background-color: #f8fafc;
+            color: #cbd5e1;
+            cursor: not-allowed;
+        }
+
+        /* SEARCH CONTAINER */
+        .search-container {
+            margin-bottom: 25px;
+            position: relative;
+            display: flex;
+            /* Flexbox for layout */
+            gap: 10px;
+            /* Gap between inputs */
+        }
+
+        .search-container input[type="text"] {
+            flex: 1;
+            /* Take remaining space */
+            padding: 15px 20px;
+            padding-left: 50px;
+            /* Space for icon */
+            font-size: 16px;
+            border: 2px solid #e3f2fd;
+            border-radius: 50px;
+            background: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(13, 71, 161, 0.05);
+            color: #0d47a1;
+        }
+
+        .search-container input[type="date"] {
+            width: auto;
+            padding: 15px 20px;
+            font-size: 16px;
+            border: 2px solid #e3f2fd;
+            border-radius: 50px;
+            background: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(13, 71, 161, 0.05);
+            color: #0d47a1;
+            cursor: pointer;
+        }
+
+        .search-container input:focus {
+            outline: none;
+            border-color: #1976d2;
+            box-shadow: 0 4px 15px rgba(25, 118, 210, 0.15);
+        }
+
+        .search-container input::placeholder {
+            color: #90caf9;
+        }
+
+        .search-container .fa-search {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #1976d2;
+            font-size: 18px;
+            z-index: 10;
+            /* Ensure icon is above */
+        }
+
+        .no-result-message {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+            display: none;
+            /* Hidden by default */
+            grid-column: 1/-1;
+        }
     </style>
 </head>
 
@@ -1058,20 +1127,25 @@ $folders = get_folders($arsip_dir);
                 </form>
             </div>
 
-            <!-- SEARCH BAR -->
-            <div class="search-container">
-                <input type="text" id="searchInput" class="search-input" placeholder="Cari nama kegiatan atau rapat..." onkeyup="filterArchives()">
-                <i class="fas fa-search search-icon"></i>
-            </div>
 
-            <!-- NO RESULTS MESSAGE -->
-            <div id="noResults" class="no-results">
-                <i class="fas fa-search" style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;"></i>
-                <p>Arsip tidak ditemukan. Coba kata kunci lain.</p>
-            </div>
 
             <!-- LIST ARSIP -->
+
+            <!-- SEARCH BAR -->
+            <div class="search-container">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Cari arsip berdasarkan nama kegiatan..." onkeyup="filterArsip()">
+                <input type="date" id="searchDate" onchange="filterArsip()" title="Filter berdasarkan tanggal">
+            </div>
+
+
             <div class="archive-grid">
+                <!-- No Result Message -->
+                <div id="no-search-result" class="no-result-message">
+                    <i class="fas fa-search" style="font-size: 40px; margin-bottom: 10px; color: #cbd5e1;"></i>
+                    <p>Arsip tidak ditemukan.</p>
+                </div>
+
                 <?php
                 // 1. Panggil Data dari VIEW SQL
                 $query = "SELECT * FROM view_semua_arsip ORDER BY tanggal DESC";
@@ -1087,9 +1161,12 @@ $folders = get_folders($arsip_dir);
                     $iconColor   = '#2563eb';
                 ?>
 
-                    <div class="archive-card">
+
+
+                    <div class="archive-card" data-date="<?= date('Y-m-d', strtotime($row['tanggal'])) ?>">
                         <div class="ac-header">
                             <i class="fas fa-folder ac-icon" style="color: <?= $iconColor ?>"></i>
+
 
                             <div class="ac-actions">
                                 <!-- TOMBOL HAPUS FOLDER (SEMUA TIPE) -->
@@ -1189,7 +1266,7 @@ $folders = get_folders($arsip_dir);
                                         </a>
                                         <!-- Edit Button -->
                                         <?php if (!$isManual): ?>
-                                            <a href="index.php?page=notulensi&id=<?= $row['id_referensi'] ?>" class="btn-edit-mini" title="Edit Notulensi" style="color:#1976d2;">
+                                            <a href="index.php?page=notulensi&id=<?= $row['id_referensi'] ?>" class="btn-edit-mini" title="Edit Notulensi" style="color:#29b6f6;">
                                                 <i class="fas fa-pencil-alt"></i>
                                             </a>
                                         <?php endif; ?>
@@ -1217,7 +1294,7 @@ $folders = get_folders($arsip_dir);
                                 </div>
                                 <div class="file-right">
                                     <?php if ($isManual): ?>
-                                        <a href="index.php?page=notulensi&nama=<?= urlencode($row['nama_kegiatan']) ?>" title="Buat Notulensi" style="border:none; background:none; cursor:pointer; color:#1976d2; text-decoration:none; margin-right:5px;">
+                                        <a href="index.php?page=notulensi&nama=<?= urlencode($row['nama_kegiatan']) ?>" title="Buat Notulensi" style="border:none; background:none; cursor:pointer; color:#29b6f6; text-decoration:none; margin-right:5px;">
                                             <i class="fas fa-pencil-alt"></i>
                                         </a>
                                         <button type="button" onclick="triggerReplace('<?= $row['id_referensi'] ?>', 'file_notulensi', 'manual')" title="Upload File" style="border:none; background:none; cursor:pointer; color:#1565c0;">
@@ -1360,6 +1437,48 @@ $folders = get_folders($arsip_dir);
             setTimeout(() => {
                 el.style.display = 'none';
             }, 3000);
+        }
+
+        // Filter Arsip Function
+        function filterArsip() {
+            const input = document.getElementById('searchInput');
+            const dateInput = document.getElementById('searchDate');
+
+            const filterText = input.value.toLowerCase();
+            const filterDate = dateInput.value; // YYYY-MM-DD format from input type=date
+
+            const cards = document.querySelectorAll('.archive-card');
+            const noResultMsg = document.getElementById('no-search-result');
+
+            let hasVisible = false;
+
+            cards.forEach(card => {
+                const title = card.querySelector('.ac-title').innerText.toLowerCase();
+                const cardDate = card.getAttribute('data-date'); // Should be YYYY-MM-DD
+
+                // Check Text Match
+                const textMatch = title.includes(filterText);
+
+                // Check Date Match (only if filterDate is selected)
+                let dateMatch = true;
+                if (filterDate) {
+                    dateMatch = (cardDate === filterDate);
+                }
+
+                if (textMatch && dateMatch) {
+                    card.style.display = ""; // Reset to default (flex/block)
+                    hasVisible = true;
+                } else {
+                    card.style.display = "none";
+                }
+            });
+
+            // Handle "No Result" message for search
+            if (noResultMsg) {
+                if (cards.length > 0) {
+                    noResultMsg.style.display = hasVisible ? "none" : "block";
+                }
+            }
         }
     </script>
 </body>

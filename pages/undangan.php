@@ -1,4 +1,15 @@
 <?php
+// 1. Cek Session agar tidak error
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+// 2. [PENTING] Reset variabel agar tidak "bocor" dari halaman lain
+// Kita set nilai default Agenda di sini.
+$agenda = "Pembahasan Optimalisasi Anggaran";
+
+/* ================= LOAD FROM ARCHIVE ================= */
+// ... kode selanjutnya ...
 /* ================= LOAD FROM ARCHIVE ================= */
 if (isset($_GET['load'])) {
     $folder = preg_replace('/[^A-Za-z0-9\-_]/', '_', $_GET['load']);
@@ -26,7 +37,11 @@ if (isset($_GET['load'])) {
                 $hari     = $loaded['hari_tanggal'] ?? null;
                 $waktu    = $loaded['pukul_mulai'] ?? null;
                 $tempat   = $loaded['tempat'] ?? null;
-                $agenda   = $loaded['agenda'] ?? null;
+                // Kita hanya timpa variabel $agenda JIKA di dalam JSON benar-benar ada isinya.
+                // Ini mencegah variabel menjadi null/kosong jika JSON-nya tidak lengkap.
+                if (!empty($loaded['agenda'])) {
+                    $agenda = $loaded['agenda'];
+                }
             }
         }
     }
@@ -155,7 +170,10 @@ $isi      = $_POST['f_isi']      ?? ($isi ?? 'Sehubungan dengan menjelang akan b
 $hari     = $_POST['f_hari']     ?? ($hari ?? '2024-11-11');
 $waktu    = $_POST['f_waktu']    ?? ($waktu ?? '13:30');
 $tempat   = $_POST['f_tempat']   ?? ($tempat ?? 'Ruang Rapat BPS Kota Depok');
-$agenda   = $_POST['f_agenda']   ?? ($agenda ?? 'Pembahasan Optimalisasi Anggaran');
+$tempat   = $_POST['f_tempat']   ?? ($tempat ?? 'Ruang Rapat BPS Kota Depok');
+// Kita gunakan variabel $agenda yang sudah kita atur di atas (entah itu default, dari JSON, atau dari DB).
+// Jika ada POST (saat tombol simpan ditekan), pakai data POST.
+$agenda = $_POST['f_agenda'] ?? $agenda; // Default explicit value
 
 /* ================= FUNGSI FORMATTING ================= */
 function formatTanggal($date)
@@ -181,6 +199,9 @@ function formatWaktu($w)
     return 'pukul ' . str_replace(':', '.', $w) . ' WIB - Selesai';
 }
 ?>
+
+
+
 <!DOCTYPE html>
 <html lang="id">
 
@@ -188,6 +209,7 @@ function formatWaktu($w)
     <meta charset="UTF-8">
     <title>Undangan Rapat - Sistem Rapat BPS Kota Depok</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="/projek_magang/tinymce/js/tinymce/tinymce.min.js" referrerpolicy="origin"></script>
     <style>
         /* ===== RESET ===== */
         * {
@@ -530,6 +552,11 @@ function formatWaktu($w)
             border-radius: 2px;
             animation: lineGrow 1s ease-in 0.5s forwards;
         }
+
+        /* TinyMCE Fix */
+        .tox-promotion {
+            display: none !important;
+        }
     </style>
 </head>
 
@@ -592,7 +619,7 @@ function formatWaktu($w)
                     <label>Hari, Tanggal</label><input type="date" name="f_hari" value="<?php echo htmlspecialchars($hari); ?>">
                     <label>Waktu</label><input type="time" name="f_waktu" value="<?php echo htmlspecialchars($waktu); ?>">
                     <label>Tempat</label><textarea name="f_tempat"><?php echo htmlspecialchars($tempat); ?></textarea>
-                    <label>Agenda</label><input name="f_agenda" value="<?php echo htmlspecialchars($agenda); ?>">
+                    <label>Agenda</label><textarea name="f_agenda"><?php echo htmlspecialchars($agenda); ?></textarea>
 
 
                     <div class="btn-group">
@@ -799,6 +826,11 @@ function formatWaktu($w)
             const originalText = btn.innerText;
             btn.innerText = 'Menyimpan & Mengunduh...';
             btn.disabled = true;
+
+            // TinyMCE Trigger Save if needed
+            if (typeof tinymce !== 'undefined') {
+                tinymce.triggerSave();
+            }
 
             // 1. Kirim data ke save_undangan.php
             fetch('pages/save_undangan.php', { // Hapus ?action=archive jika tidak perlu logika khusus
