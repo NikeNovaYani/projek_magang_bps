@@ -313,9 +313,9 @@ function formatWaktu($w)
             flex: 1;
             padding: 30px;
             overflow-y: auto;
-            margin-left: 140px;
+            margin-left: 150px;
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 2fr;
             gap: 30px;
             align-items: start;
         }
@@ -359,7 +359,7 @@ function formatWaktu($w)
 
         /* Form Styling */
         .form-container {
-            width: 350px;
+            width: 500px;
             background: white;
             padding: 20px;
             border-radius: 8px;
@@ -371,7 +371,7 @@ function formatWaktu($w)
             display: block;
             font-weight: bold;
             margin-bottom: 5px;
-            font-size: 0.9em;
+            font-size: 12pt;
             color: #1619ccff;
         }
 
@@ -399,26 +399,35 @@ function formatWaktu($w)
             /* Scrollable */
         }
 
-        .btn-group {
+        .actions {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
         }
 
-        button {
-            flex: 1;
-            padding: 10px;
+        .btn {
             border: none;
-            border-radius: 4px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-weight: 500;
             cursor: pointer;
-            font-weight: bold;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, .10);
+            transition: .15s;
+            font-size: 10px;
+            white-space: nowrap;
         }
 
-        .btn-lihat {
-            background: #0bbb1aff;
-            color: white;
+        .btn:hover {
+            transform: translateY(-1px);
         }
 
-        .btn-print {
+        .btn.save {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #fff;
+        }
+
+        .btn.print {
             background: #ff7300ff;
             color: white;
         }
@@ -452,12 +461,12 @@ function formatWaktu($w)
             display: flex;
             justify-content: space-between;
             margin-bottom: 20px;
-            font-size: 11pt;
+            font-size: 12pt;
             color: black
         }
 
         .content {
-            font-size: 11pt;
+            font-size: 12pt;
             line-height: 1.5;
             text-align: justify;
             color: black
@@ -564,7 +573,7 @@ function formatWaktu($w)
 
     <div class="container">
         <div class="sidebar">
-            <h2>UANG</h2>
+            <h2>SI UANG</h2>
             <ul>
                 <li><a href="index.php?page=beranda"><i class="fas fa-home"></i> Beranda</a></li>
                 <li><a href="index.php?page=undangan" class="active"><i class="fas fa-envelope"></i> Undangan</a></li>
@@ -599,7 +608,9 @@ function formatWaktu($w)
 
                     <label>Nomor Surat</label>
                     <input name="f_nomor" value="<?= htmlspecialchars($nomor) ?>">
-                    <a href="https://sites.google.com/view/permintaan-nomor-surat/no-surat-2025"
+
+                    <!--PERUBAHAN EMBEDED LINK -->
+                    <a href="https://github.com/NikeNovaYani"
                         target="_blank" style="display: inline-block; margin-bottom: 20px; color: #1976d2; 
                 text-decoration: none; font-size: 10pt;"><i class="fas fa-external-link-alt"></i> Buat Nomor Surat</a>
 
@@ -622,9 +633,9 @@ function formatWaktu($w)
                     <label>Agenda</label><textarea name="f_agenda"><?php echo htmlspecialchars($agenda); ?></textarea>
 
 
-                    <div class="btn-group">
-                        <button type="submit" class="btn-lihat" onclick="submitNormal()">Simpan</button>
-                        <button type="button" class="btn-print" onclick="submitCetak()">Cetak PDF</button>
+                    <div class="actions" style="margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+                        <button class="btn save" type="button" onclick="saveNotulensi()" style="flex: 1; justify-content: center; font-size: 16px; padding: 8px;"><i class="fas fa-save"></i> Simpan Undangan</button>
+                        <button class="btn print" type="button" onclick="cetakPDF(this)" style="flex: 1; justify-content: center; font-size: 16px; padding: 8px;"><i class="fas fa-print"></i> Cetak PDF</button>
                     </div>
                 </form>
             </div>
@@ -782,7 +793,7 @@ function formatWaktu($w)
     <script>
         const form = document.getElementById('formUndangan');
 
-        function submitNormal() {
+        function saveNotulensi() {
             // Validasi Field Nama Kegiatan
             const namaKegiatan = form.querySelector('[name="f_nama_kegiatan"]').value.trim();
             if (!namaKegiatan) {
@@ -809,8 +820,8 @@ function formatWaktu($w)
             form.submit();
         }
 
-        function submitCetak() {
-            const form = document.querySelector('form'); // Pastikan selektor form benar
+        function cetakPDF(btn) {
+            const form = document.getElementById('formUndangan'); // Pastikan selektor form benar
 
             // Validasi Field Nama Kegiatan
             const namaKegiatan = form.querySelector('[name="f_nama_kegiatan"]').value.trim();
@@ -822,7 +833,7 @@ function formatWaktu($w)
             const data = new FormData(form);
 
             // Ubah tombol jadi Loading
-            const btn = document.querySelector('.btn-print');
+            // const btn = document.querySelector('.btn-print'); // HAPUS INI
             const originalText = btn.innerText;
             btn.innerText = 'Menyimpan & Mengunduh...';
             btn.disabled = true;

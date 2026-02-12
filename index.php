@@ -195,7 +195,7 @@ $page_title = $page_titles[$page] ?? 'UANG BPS Kota Depok';
 
     <div class="container">
         <div class="sidebar">
-            <h2>UANG</h2>
+            <h2>SI UANG</h2>
             <ul>
                 <li><a href="index.php?page=beranda" class="<?= $page === 'beranda' ? 'active' : '' ?>"><i class="fas fa-home"></i> Beranda</a></li>
                 <li><a href="index.php?page=undangan" class="<?= $page === 'undangan' ? 'active' : '' ?>"><i class="fas fa-envelope"></i> Undangan</a></li>

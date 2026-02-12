@@ -140,7 +140,7 @@ $peserta       = $peserta ?? ($_POST['peserta'] ?? "Sebagaimana Terlampir");
 $agenda        = $agenda ?? ($_POST['agenda'] ?? "✓ Pembukaan\n✓ Pembahasan dan Diskusi\n✓ Kesimpulan dan Tindak Lanjut");
 $pembukaan     = $pembukaan ?? ($_POST['pembukaan'] ?? "Silakan isi pembukaan rapat di sini.");
 $pembahasan    = $pembahasan ?? ($_POST['pembahasan'] ?? "Silakan isi pembahasan dan diskusi di sini.");
-$kesimpulan    = $kesimpulan ?? ($_POST['kesimpulan'] ?? '');
+$kesimpulan    = $kesimpulan ?? ($_POST[''] ?? "(enter untuk memulai)");
 
 // Initialize nama_kegiatan if empty
 // Support pre-fill from arsip manual "Buat" button via URL parameter
@@ -420,11 +420,11 @@ if ($is_print) {
             border: none;
             padding: 10px 14px;
             border-radius: 10px;
-            font-weight: 800;
+            font-weight: 500;
             cursor: pointer;
             box-shadow: 0 6px 14px rgba(0, 0, 0, .10);
             transition: .15s;
-            font-size: 13px;
+            font-size: 10px;
             white-space: nowrap;
         }
 
@@ -438,16 +438,34 @@ if ($is_print) {
         }
 
         .btn.print {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-            color: #fff;
+            background: #ff7300ff;
+            color: white;
         }
 
         /* layout 2 panel */
         .grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 2fr;
             gap: 20px;
             align-items: start;
+        }
+
+        /* Desktop: Preview (Left), Form (Right) */
+        /* Removed order properties as per instruction */
+
+        @media (max-width: 900px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            /* Mobile: Form (Top), Preview (Bottom) */
+            .form-card {
+                order: 1;
+            }
+
+            .preview-card {
+                order: 2;
+            }
         }
 
         .card {
@@ -504,6 +522,14 @@ if ($is_print) {
         .card-body {
             padding: 14px;
             width: 100%;
+        }
+
+        .form-card {
+            width: 500px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            height: fit-content;
         }
 
         /* Form Sections */
@@ -700,8 +726,7 @@ if ($is_print) {
 
         .sidebar ul {
             /* kotak isi */
-            list-styl
-            e: none;
+            list-style: none;
             padding: 0;
             /* kotak teks */
             margin: 0;
@@ -747,7 +772,7 @@ if ($is_print) {
             flex: 1;
             padding: 30px;
             overflow-y: auto;
-            margin-left: 140px;
+            margin-left: 150px;
         }
 
         /* ===== RESPONSIVE ===== */
@@ -874,7 +899,7 @@ if ($is_print) {
 <body>
     <div class="container">
         <div class="sidebar">
-            <h2>UANG</h2>
+            <h2>SI UANG</h2>
             <ul>
                 <li><a href="index.php?page=beranda"><i class="fas fa-home"></i> Beranda</a></li>
                 <li><a href="index.php?page=undangan"><i class="fas fa-envelope"></i> Undangan</a></li>
@@ -888,15 +913,13 @@ if ($is_print) {
             <div class="notification" id="notification">Tersimpan ✅</div>
 
             <div class="page-wrap">
-                <div class="actions">
-                    <button class="btn save" type="button" onclick="saveNotulensi()">Simpan</button>
-                    <button class="btn print" type="button" onclick="cetakPDF(this)">Cetak PDF</button>
-                </div>
+
 
 
                 <div class="grid">
                     <!-- FORM -->
-                    <div class="card">
+                    <!-- FORM -->
+                    <div class="card form-card">
                         <div class="card-head">
                             <h3>Buat Notulensi</h3>
                         </div>
@@ -1161,12 +1184,20 @@ if ($is_print) {
                                     </div>
                                 </div>
 
+                                <!-- ACTION BUTTONS BOTTOM -->
+                                <div class="actions" style="margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+                                    <button class="btn save" type="button" onclick="saveNotulensi()" style="flex: 1; justify-content: center; font-size: 16px; padding: 8px;"><i class="fas fa-save"></i> Simpan Notulensi</button>
+                                    <button class="btn print" type="button" onclick="cetakPDF(this)" style="flex: 1; justify-content: center; font-size: 16px; padding: 8px;"><i class="fas fa-print"></i> Cetak PDF</button>
+                                </div>
+
                             </form>
                         </div>
                     </div>
 
+
                     <!-- PREVIEW -->
-                    <div class="card" style="position: sticky; top: 20px;">
+                    <!-- PREVIEW -->
+                    <div class="card preview-card" style="position: sticky; top: 20px;">
                         <!-- Navigation Controls -->
                         <div style="background: #e2e8f0; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #cbd5e1;">
                             <span style="font-weight: bold; font-size: 13px; color: #475569;">Preview</span>
@@ -1260,644 +1291,652 @@ if ($is_print) {
 
                 </div>
             </div>
+        </div>
+    </div>
 
-            <!-- Styles for Navigation Buttons -->
-            <style>
-                .nav-btn {
-                    border: none;
-                    background: transparent;
-                    width: 28px;
-                    height: 28px;
-                    border-radius: 50%;
-                    cursor: pointer;
-                    font-weight: bold;
-                    color: #64748b;
-                    transition: all 0.2s;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
+    <!-- Styles for Navigation Buttons -->
+    <style>
+        .nav-btn {
+            border: none;
+            background: transparent;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+            color: #64748b;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-                .nav-btn.active {
-                    background: #fff;
-                    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-                    color: #0f172a;
-                }
+        .nav-btn.active {
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            color: #0f172a;
+        }
 
-                .nav-btn:hover:not(.active) {
-                    background: rgba(255, 255, 255, 0.5);
-                }
+        .nav-btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.5);
+        }
 
-                .doc-page {
-                    position: absolute;
-                    top: 0;
-                    left: 100%;
-                    /* Initially hidden to the right */
-                    width: 50%;
-                    height: auto;
-                    background: #fff;
-                    transition: left 0.3s ease;
-                    padding: 14px;
-                    overflow-y: auto;
-                }
+        .doc-page {
+            position: absolute;
+            top: 0;
+            left: 100%;
+            /* Initially hidden to the right */
+            width: 50%;
+            height: auto;
+            background: #fff;
+            transition: left 0.3s ease;
+            padding: 14px;
+            overflow-y: auto;
+        }
 
-                /* Auto Height Logic */
-                .paper.auto-height {
-                    aspect-ratio: unset !important;
-                    height: auto !important;
-                    overflow: visible !important;
-                    min-height: 297mm;
-                    /* Ensure at least A4 height */
-                }
+        /* Auto Height Logic */
+        .paper.auto-height {
+            aspect-ratio: unset !important;
+            height: auto !important;
+            overflow: visible !important;
+            min-height: 297mm;
+            /* Ensure at least A4 height */
+        }
 
-                .page-view.relative-flow {
-                    position: relative !important;
-                    height: auto !important;
-                    left: 0 !important;
-                    transform: none !important;
-                }
-            </style>
+        .page-view.relative-flow {
+            position: relative !important;
+            height: auto !important;
+            left: 0 !important;
+            transform: none !important;
+        }
+    </style>
 
-            <script>
-                /* =========================
+    <script>
+        // Initialize DataTransfer objects for file accumulation
+        window.dtDokumentasi = new DataTransfer();
+        window.dtAbsensi = new DataTransfer();
+
+        /* =========================
    HELPER
 ========================= */
-                function escapeHtml(s) {
-                    return (s || '').replace(/[&<>"']/g, c => ({
-                        '&': '&amp;',
-                        '<': '&lt;',
-                        '>': '&gt;',
-                        '"': '&quot;',
-                        "'": '&#39;'
-                    } [c]));
-                }
+        function escapeHtml(s) {
+            return (s || '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            } [c]));
+        }
 
-                function nl2br(s) {
-                    return escapeHtml(s).replace(/\n/g, '<br>');
-                }
+        function nl2br(s) {
+            return escapeHtml(s).replace(/\n/g, '<br>');
+        }
 
-                function autoResize(t) {
-                    t.style.height = 'auto';
-                    t.style.height = t.scrollHeight + 'px';
-                }
+        function autoResize(t) {
+            t.style.height = 'auto';
+            t.style.height = t.scrollHeight + 'px';
+        }
 
-                /* =========================
-                   REMOVE EXISTING PHOTO
-                ========================= */
-                function removeExistingFile(btn) {
-                    if (!confirm('Hapus foto ini? Perubahan akan tersimpan saat klik Simpan.')) return;
+        /* =========================
+           REMOVE EXISTING PHOTO
+        ========================= */
+        function removeExistingFile(btn) {
+            if (!confirm('Hapus foto ini? Perubahan akan tersimpan saat klik Simpan.')) return;
 
-                    // 1. Get the file value from data attribute
-                    const item = btn.closest('.existing-photo-item');
-                    const fileValue = item ? item.getAttribute('data-file') : null;
+            // 1. Get the file value from data attribute
+            const item = btn.closest('.existing-photo-item');
+            const fileValue = item ? item.getAttribute('data-file') : null;
 
-                    // 2. Determine type (dokumentasi or absensi) by checking parent gallery
-                    const gallery = item ? item.parentElement : null;
-                    const isDok = gallery && gallery.id === 'existingDokGallery';
+            // 2. Determine type (dokumentasi or absensi) by checking parent gallery
+            const gallery = item ? item.parentElement : null;
+            const isDok = gallery && gallery.id === 'existingDokGallery';
 
-                    // 3. Remove from server arrays (for preview sync)
-                    if (fileValue) {
-                        if (isDok && window.serverDocFiles) {
-                            window.serverDocFiles = window.serverDocFiles.filter(function(f) {
-                                return f !== fileValue;
-                            });
-                        } else if (window.serverAbsFiles) {
-                            window.serverAbsFiles = window.serverAbsFiles.filter(function(f) {
-                                return f !== fileValue;
-                            });
-                        }
-                    }
-
-                    // 4. Remove the thumbnail with animation
-                    if (item) {
-                        item.style.transition = 'opacity 0.3s, transform 0.3s';
-                        item.style.opacity = '0';
-                        item.style.transform = 'scale(0.8)';
-                        setTimeout(function() {
-                            item.remove();
-
-                            // If gallery is now empty, remove it and label
-                            if (gallery && gallery.children.length === 0) {
-                                const label = gallery.previousElementSibling;
-                                if (label && label.classList.contains('existing-label')) label.remove();
-                                gallery.remove();
-                            }
-                        }, 300);
-                    }
-
-                    // 5. Remove the matching hidden input by value
-                    if (fileValue) {
-                        const form = document.getElementById('notulenForm');
-                        const allHidden = form.querySelectorAll('input[type="hidden"]');
-                        allHidden.forEach(function(inp) {
-                            if (inp.value === fileValue) {
-                                inp.remove();
-                            }
-                        });
-                    }
-
-                    // 6. Refresh preview panel
-                    previewImages();
-                }
-
-                /* =========================
-                   REMOVE NEW UPLOAD PHOTO
-                ========================= */
-                function removeNewUpload(type, btn) {
-                    if (!confirm('Hapus foto baru ini?')) return;
-
-                    // Clear the file input
-                    const inputId = type === 'dokumentasi' ? 'inputDokumentasi' : 'inputAbsensi';
-                    const fileInput = document.getElementById(inputId);
-                    if (fileInput) fileInput.value = '';
-
-                    // Remove the thumbnail
-                    const item = btn.closest('.existing-photo-item');
-                    if (item) {
-                        item.style.transition = 'opacity 0.3s, transform 0.3s';
-                        item.style.opacity = '0';
-                        item.style.transform = 'scale(0.8)';
-                        setTimeout(function() {
-                            const gallery = item.parentElement;
-                            item.remove();
-                            // If gallery has no more items, remove it
-                            if (gallery && gallery.querySelectorAll('.existing-photo-item').length === 0) {
-                                const label = gallery.previousElementSibling;
-                                if (label && label.classList.contains('existing-label')) label.remove();
-                                gallery.remove();
-                            }
-                        }, 300);
-                    }
-
-                    // Refresh preview
-                    previewImages();
-                }
-
-                /* =========================
-                   NAVIGATION PREVIEW
-                ========================= */
-                let currentPage = 1;
-                let totalPages = 1;
-                const archiveFolder = '<?= $folder ?? '' ?>';
-
-                function updateNavUI() {
-                    const container = document.getElementById('navControls');
-                    let html = '';
-
-                    for (let i = 1; i <= totalPages; i++) {
-                        const activeClass = (i === currentPage) ? 'active' : '';
-                        html += `<button type="button" class="nav-btn ${activeClass}" onclick="switchPage(${i})">${i}</button>`;
-                    }
-
-                    html += `<button type="button" class="nav-btn" onclick="nextPage()"><i class="fas fa-chevron-right"></i></button>`;
-                    container.innerHTML = html;
-                }
-
-                function switchPage(page) {
-                    if (page < 1 || page > totalPages) return;
-                    currentPage = page;
-
-                    const paper = document.getElementById('paperPreview');
-                    const p1 = document.getElementById('page1');
-
-                    // Handle Page 1 Logic
-                    if (page === 1) {
-                        paper.classList.add('auto-height');
-                        p1.classList.add('relative-flow');
-                        p1.style.transform = 'none'; // Clear transform
-                    } else {
-                        paper.classList.remove('auto-height');
-                        p1.classList.remove('relative-flow');
-                        p1.style.transform = 'translateX(-100%)';
-                        p1.style.position = 'absolute'; // Ensure it goes back to absolute
-                    }
-
-                    // Handle Dynamic Pages (2, 3...)
-                    const docPages = document.querySelectorAll('.doc-page');
-                    docPages.forEach((p, idx) => {
-                        const pageNum = idx + 2;
-                        if (pageNum === page) {
-                            p.style.left = '0';
-                        } else if (pageNum < page) {
-                            p.style.left = '-100%';
-                        } else {
-                            p.style.left = '100%';
-                        }
+            // 3. Remove from server arrays (for preview sync)
+            if (fileValue) {
+                if (isDok && window.serverDocFiles) {
+                    window.serverDocFiles = window.serverDocFiles.filter(function(f) {
+                        return f !== fileValue;
                     });
-
-                    updateNavUI();
-                }
-
-                function nextPage() {
-                    let next = currentPage + 1;
-                    if (next > totalPages) next = 1;
-                    switchPage(next);
-                }
-
-                /* =========================
-                   IMAGE PREVIEW
-                ========================= */
-                function previewImages() {
-                    const inputDoc = document.getElementById('inputDokumentasi');
-                    const inputAbs = document.getElementById('inputAbsensi');
-                    const paper = document.getElementById('paperPreview');
-
-                    // Update label counts
-                    const countSpanDoc = document.getElementById('fileCount');
-                    const countSpanAbs = document.getElementById('fileCountAbsensi'); // Use specific ID
-
-                    if (inputDoc.files.length > 0) {
-                        countSpanDoc.textContent = inputDoc.files.length + ' file dipilih';
-                    } else {
-                        countSpanDoc.textContent = 'Belum ada file dipilih';
-                    }
-
-                    if (countSpanAbs) {
-                        if (inputAbs.files.length > 0) {
-                            countSpanAbs.textContent = inputAbs.files.length + ' file dipilih';
-                        } else {
-                            countSpanAbs.textContent = 'Belum ada file dipilih';
-                        }
-                    }
-
-                    // Remove existing doc pages (and absensi pages if any share the class)
-                    const existing = document.querySelectorAll('.doc-page');
-                    existing.forEach(e => e.remove());
-
-                    // Start Page Counting
-                    totalPages = 1;
-
-                    // --- PROCESS DOKUMENTASI ---
-                    // Combine separate arrays: Server Files + New Input Files
-                    // Note: This simple logic appends new files after existing ones.
-                    const newDocs = Array.from(inputDoc.files);
-                    const allDocs = [...(window.serverDocFiles || []), ...newDocs].slice(0, 4);
-
-                    if (allDocs.length > 0) {
-                        const chunkSize = 2;
-                        for (let i = 0; i < allDocs.length; i += chunkSize) {
-                            const chunk = allDocs.slice(i, i + chunkSize);
-                            totalPages++;
-                            createPage(totalPages, 'DOKUMENTASI', chunk, false);
-                        }
-                    }
-
-                    // --- PROCESS ABSENSI ---
-                    const newAbs = Array.from(inputAbs.files);
-                    const allAbs = [...(window.serverAbsFiles || []), ...newAbs].slice(0, 4);
-
-                    if (allAbs.length > 0) {
-                        // 1 Image per page for Absensi (usually A4 landscape)
-                        const chunkSize = 1;
-                        for (let i = 0; i < allAbs.length; i += chunkSize) {
-                            const chunk = allAbs.slice(i, i + chunkSize);
-                            totalPages++;
-                            createPage(totalPages, 'DAFTAR HADIR', chunk, true);
-                        }
-                    }
-
-                    // Update UI
-                    updateNavUI();
-
-                    // Update Counts Logic to include Server files
-                    if (allDocs.length > 0) countSpanDoc.textContent = allDocs.length + ' file (Total)';
-                    if (countSpanAbs && allAbs.length > 0) countSpanAbs.textContent = allAbs.length + ' file (Total)';
-
-                    // --- RENDER NEW UPLOAD THUMBNAILS IN FORM GALLERY ---
-                    // Remove previously rendered new-upload thumbnails
-                    document.querySelectorAll('.new-upload-thumb').forEach(function(el) {
-                        el.remove();
+                } else if (window.serverAbsFiles) {
+                    window.serverAbsFiles = window.serverAbsFiles.filter(function(f) {
+                        return f !== fileValue;
                     });
+                }
+            }
 
-                    // Dokumentasi: show new file thumbnails
-                    if (newDocs.length > 0) {
-                        let dokGallery = document.getElementById('existingDokGallery');
-                        // Create gallery container if it doesn't exist yet
-                        if (!dokGallery) {
-                            const dokContent = document.getElementById('dokumentasi-content');
-                            const label = document.createElement('label');
-                            label.className = 'hint existing-label';
-                            label.style.cssText = 'display:block; margin-bottom:5px; font-weight:bold;';
-                            label.textContent = 'Foto yang sudah diupload:';
-                            dokContent.insertBefore(label, dokContent.firstChild);
-                            dokGallery = document.createElement('div');
-                            dokGallery.className = 'existing-photos';
-                            dokGallery.id = 'existingDokGallery';
-                            label.after(dokGallery);
+            // 4. Remove the thumbnail with animation
+            if (item) {
+                item.style.transition = 'opacity 0.3s, transform 0.3s';
+                item.style.opacity = '0';
+                item.style.transform = 'scale(0.8)';
+                setTimeout(function() {
+                    item.remove();
+
+                    // If gallery is now empty, remove it and label
+                    if (gallery && gallery.children.length === 0) {
+                        const label = gallery.previousElementSibling;
+                        if (label && label.classList.contains('existing-label')) label.remove();
+                        gallery.remove();
+                    }
+                }, 300);
+            }
+
+            // 5. Remove the matching hidden input by value
+            if (fileValue) {
+                const form = document.getElementById('notulenForm');
+                const allHidden = form.querySelectorAll('input[type="hidden"]');
+                allHidden.forEach(function(inp) {
+                    if (inp.value === fileValue) {
+                        inp.remove();
+                    }
+                });
+            }
+
+            // 6. Refresh preview panel
+            previewImages();
+        }
+
+        /* =========================
+           REMOVE NEW UPLOAD PHOTO
+        ========================= */
+        function removeNewUpload(type, btn, index) {
+            if (!confirm('Hapus foto baru ini?')) return;
+
+            // 1. Update DataTransfer Object
+            const dt = type === 'dokumentasi' ? window.dtDokumentasi : window.dtAbsensi;
+            if (index >= 0 && index < dt.items.length) {
+                dt.items.remove(index);
+            }
+
+            // 2. Sync to Input
+            const inputId = type === 'dokumentasi' ? 'inputDokumentasi' : 'inputAbsensi';
+            const fileInput = document.getElementById(inputId);
+            if (fileInput) {
+                fileInput.files = dt.files;
+            }
+
+            // 3. Remove thumbnail (Visual only, will be refreshed)
+            const item = btn.closest('.existing-photo-item');
+            if (item) {
+                item.remove();
+            }
+
+            // 4. Refresh preview (this re-renders thumbnails with correct indices)
+            previewImages();
+        }
+
+        /* =========================
+           NAVIGATION PREVIEW
+        ========================= */
+        let currentPage = 1;
+        let totalPages = 1;
+        const archiveFolder = '<?= $folder ?? '' ?>';
+
+        function updateNavUI() {
+            const container = document.getElementById('navControls');
+            let html = '';
+
+            for (let i = 1; i <= totalPages; i++) {
+                const activeClass = (i === currentPage) ? 'active' : '';
+                html += `<button type="button" class="nav-btn ${activeClass}" onclick="switchPage(${i})">${i}</button>`;
+            }
+
+            html += `<button type="button" class="nav-btn" onclick="nextPage()"><i class="fas fa-chevron-right"></i></button>`;
+            container.innerHTML = html;
+        }
+
+        function switchPage(page) {
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+
+            const paper = document.getElementById('paperPreview');
+            const p1 = document.getElementById('page1');
+
+            // Handle Page 1 Logic
+            if (page === 1) {
+                paper.classList.add('auto-height');
+                p1.classList.add('relative-flow');
+                p1.style.transform = 'none'; // Clear transform
+            } else {
+                paper.classList.remove('auto-height');
+                p1.classList.remove('relative-flow');
+                p1.style.transform = 'translateX(-100%)';
+                p1.style.position = 'absolute'; // Ensure it goes back to absolute
+            }
+
+            // Handle Dynamic Pages (2, 3...)
+            const docPages = document.querySelectorAll('.doc-page');
+            docPages.forEach((p, idx) => {
+                const pageNum = idx + 2;
+                if (pageNum === page) {
+                    p.style.left = '0';
+                } else if (pageNum < page) {
+                    p.style.left = '-100%';
+                } else {
+                    p.style.left = '100%';
+                }
+            });
+
+            updateNavUI();
+        }
+
+        function nextPage() {
+            let next = currentPage + 1;
+            if (next > totalPages) next = 1;
+            switchPage(next);
+        }
+
+        /* =========================
+           IMAGE PREVIEW
+        ========================= */
+        function previewImages() {
+            const inputDoc = document.getElementById('inputDokumentasi');
+            const inputAbs = document.getElementById('inputAbsensi');
+            const paper = document.getElementById('paperPreview');
+
+            // Update label counts
+            const countSpanDoc = document.getElementById('fileCount');
+            const countSpanAbs = document.getElementById('fileCountAbsensi'); // Use specific ID
+
+            if (inputDoc.files.length > 0) {
+                countSpanDoc.textContent = inputDoc.files.length + ' file dipilih';
+            } else {
+                countSpanDoc.textContent = 'Belum ada file dipilih';
+            }
+
+            if (countSpanAbs) {
+                if (inputAbs.files.length > 0) {
+                    countSpanAbs.textContent = inputAbs.files.length + ' file dipilih';
+                } else {
+                    countSpanAbs.textContent = 'Belum ada file dipilih';
+                }
+            }
+
+            // Remove existing doc pages (and absensi pages if any share the class)
+            const existing = document.querySelectorAll('.doc-page');
+            existing.forEach(e => e.remove());
+
+            // Start Page Counting
+            totalPages = 1;
+
+            // --- PROCESS DOKUMENTASI ---
+            // Combine separate arrays: Server Files + New Input Files
+            // Note: This simple logic appends new files after existing ones.
+            const newDocs = Array.from(inputDoc.files);
+            const allDocs = [...(window.serverDocFiles || []), ...newDocs].slice(0, 4);
+
+            if (allDocs.length > 0) {
+                const chunkSize = 2;
+                for (let i = 0; i < allDocs.length; i += chunkSize) {
+                    const chunk = allDocs.slice(i, i + chunkSize);
+                    totalPages++;
+                    createPage(totalPages, 'DOKUMENTASI', chunk, false);
+                }
+            }
+
+            // --- PROCESS ABSENSI ---
+            const newAbs = Array.from(inputAbs.files);
+            const allAbs = [...(window.serverAbsFiles || []), ...newAbs].slice(0, 4);
+
+            if (allAbs.length > 0) {
+                // 2 Images per page for Absensi (A4 landscape)
+                const chunkSize = 2;
+                for (let i = 0; i < allAbs.length; i += chunkSize) {
+                    const chunk = allAbs.slice(i, i + chunkSize);
+                    totalPages++;
+                    createPage(totalPages, 'DAFTAR HADIR', chunk, true);
+                }
+            }
+
+            // Update UI
+            updateNavUI();
+
+            // Update Counts Logic to include Server files
+            if (allDocs.length > 0) countSpanDoc.textContent = allDocs.length + ' file (Total)';
+            if (countSpanAbs && allAbs.length > 0) countSpanAbs.textContent = allAbs.length + ' file (Total)';
+
+            // --- RENDER NEW UPLOAD THUMBNAILS IN FORM GALLERY ---
+            // Remove previously rendered new-upload thumbnails
+            document.querySelectorAll('.new-upload-thumb').forEach(function(el) {
+                el.remove();
+            });
+
+            // Dokumentasi: show new file thumbnails
+            if (newDocs.length > 0) {
+                let dokGallery = document.getElementById('existingDokGallery');
+                // Create gallery container if it doesn't exist yet
+                if (!dokGallery) {
+                    const dokContent = document.getElementById('dokumentasi-content');
+                    const label = document.createElement('label');
+                    label.className = 'hint existing-label';
+                    label.style.cssText = 'display:block; margin-bottom:5px; font-weight:bold;';
+                    label.textContent = 'Foto yang sudah diupload:';
+                    dokContent.insertBefore(label, dokContent.firstChild);
+                    dokGallery = document.createElement('div');
+                    dokGallery.className = 'existing-photos';
+                    dokGallery.id = 'existingDokGallery';
+                    label.after(dokGallery);
+                }
+                newDocs.forEach(function(file, index) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const div = document.createElement('div');
+                        div.className = 'existing-photo-item new-upload-thumb';
+                        div.innerHTML = '<img src="' + e.target.result + '" alt="Baru" title="' + file.name + '">' +
+                            '<button type="button" class="btn-remove" onclick="removeNewUpload(\'dokumentasi\', this, ' + index + ')" title="Hapus foto ini">&times;</button>';
+                        dokGallery.appendChild(div);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            // Absensi: show new file thumbnails
+            if (newAbs.length > 0) {
+                let absGallery = document.getElementById('existingAbsGallery');
+                if (!absGallery) {
+                    const absContent = document.getElementById('absensi-content');
+                    const label = document.createElement('label');
+                    label.className = 'hint existing-label';
+                    label.style.cssText = 'display:block; margin-bottom:5px; font-weight:bold;';
+                    label.textContent = 'Foto absensi yang sudah diupload:';
+                    absContent.insertBefore(label, absContent.firstChild);
+                    absGallery = document.createElement('div');
+                    absGallery.className = 'existing-photos';
+                    absGallery.id = 'existingAbsGallery';
+                    label.after(absGallery);
+                }
+                newAbs.forEach(function(file, index) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const div = document.createElement('div');
+                        div.className = 'existing-photo-item new-upload-thumb';
+                        div.innerHTML = '<img src="' + e.target.result + '" alt="Baru" title="' + file.name + '">' +
+                            '<button type="button" class="btn-remove" onclick="removeNewUpload(\'absensi\', this, ' + index + ')" title="Hapus foto ini">&times;</button>';
+                        absGallery.appendChild(div);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            // Navigate only if we added pages and are currently on page 1
+            // or if the user just uploaded something, switch to the new page?
+            // Let's just update UI. JS state might need to stay on current page unless it's invalid.
+            if (currentPage > totalPages) {
+                switchPage(totalPages);
+            } else if (totalPages > 1 && currentPage === 1 && (inputDoc.files.length > 0 || inputAbs.files.length > 0)) {
+                // Only auto-switch if we are on page 1 and content was added
+                // But avoid annoying switching if user is editing text.
+                // For now, let's auto switch to 2 if pages created.
+                switchPage(2);
+            }
+        }
+
+        function createPage(pageNum, title, files, isLandscape) {
+            const paper = document.getElementById('paperPreview');
+            const div = document.createElement('div');
+            div.className = 'doc-page';
+            div.id = 'page' + pageNum;
+            div.style.left = '100%';
+
+            div.innerHTML = `<h3 style="text-align: center; margin-bottom: 20px; font-weight: bold; color: #0d47a1;">${title}</h3>`;
+
+            const imgContainer = document.createElement('div');
+            imgContainer.style.cssText = 'display: flex; flex-direction: column; gap: 40px; align-items: center; justify-content: flex-start; height: 90%;';
+
+            if (files && files.length > 0) {
+                files.forEach(file => {
+                    let src = '';
+                    if (file instanceof File) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            renderImg(e.target.result);
                         }
-                        newDocs.forEach(function(file) {
-                            const reader = new FileReader();
-                            reader.onload = function(e) {
-                                const div = document.createElement('div');
-                                div.className = 'existing-photo-item new-upload-thumb';
-                                div.innerHTML = '<img src="' + e.target.result + '" alt="Baru" title="' + file.name + '">' +
-                                    '<button type="button" class="btn-remove" onclick="removeNewUpload(\'dokumentasi\', this)" title="Hapus foto ini">&times;</button>';
-                                dokGallery.appendChild(div);
-                            };
-                            reader.readAsDataURL(file);
-                        });
-                    }
+                        reader.readAsDataURL(file);
+                    } else if (typeof file === 'string') {
 
-                    // Absensi: show new file thumbnails
-                    if (newAbs.length > 0) {
-                        let absGallery = document.getElementById('existingAbsGallery');
-                        if (!absGallery) {
-                            const absContent = document.getElementById('absensi-content');
-                            const label = document.createElement('label');
-                            label.className = 'hint existing-label';
-                            label.style.cssText = 'display:block; margin-bottom:5px; font-weight:bold;';
-                            label.textContent = 'Foto absensi yang sudah diupload:';
-                            absContent.insertBefore(label, absContent.firstChild);
-                            absGallery = document.createElement('div');
-                            absGallery.className = 'existing-photos';
-                            absGallery.id = 'existingAbsGallery';
-                            label.after(absGallery);
+                        src = file;
+                        if (archiveFolder && !src.includes('/') && !src.startsWith('data:')) {
+                            src = 'arsip/' + archiveFolder + '/' + src;
+                        } else if (!src.includes('/') && !src.startsWith('data:')) {
+                            // Default Uploads (Standard Notulensi)
+                            if (title === 'DOKUMENTASI') {
+                                src = 'uploads/dokumentasi/' + src;
+                            } else {
+                                src = 'uploads/absensi/' + src;
+                            }
                         }
-                        newAbs.forEach(function(file) {
-                            const reader = new FileReader();
-                            reader.onload = function(e) {
-                                const div = document.createElement('div');
-                                div.className = 'existing-photo-item new-upload-thumb';
-                                div.innerHTML = '<img src="' + e.target.result + '" alt="Baru" title="' + file.name + '">' +
-                                    '<button type="button" class="btn-remove" onclick="removeNewUpload(\'absensi\', this)" title="Hapus foto ini">&times;</button>';
-                                absGallery.appendChild(div);
-                            };
-                            reader.readAsDataURL(file);
-                        });
+                        renderImg(src);
                     }
 
-                    // Navigate only if we added pages and are currently on page 1
-                    // or if the user just uploaded something, switch to the new page?
-                    // Let's just update UI. JS state might need to stay on current page unless it's invalid.
-                    if (currentPage > totalPages) {
-                        switchPage(totalPages);
-                    } else if (totalPages > 1 && currentPage === 1 && (inputDoc.files.length > 0 || inputAbs.files.length > 0)) {
-                        // Only auto-switch if we are on page 1 and content was added
-                        // But avoid annoying switching if user is editing text.
-                        // For now, let's auto switch to 2 if pages created.
-                        switchPage(2);
-                    }
-                }
-
-                function createPage(pageNum, title, files, isLandscape) {
-                    const paper = document.getElementById('paperPreview');
-                    const div = document.createElement('div');
-                    div.className = 'doc-page';
-                    div.id = 'page' + pageNum;
-                    div.style.left = '100%';
-
-                    div.innerHTML = `<h3 style="text-align: center; margin-bottom: 20px; font-weight: bold; color: #0d47a1;">${title}</h3>`;
-
-                    const imgContainer = document.createElement('div');
-                    imgContainer.style.cssText = 'display: flex; flex-direction: column; gap: 40px; align-items: center; justify-content: flex-start; height: 90%;';
-
-                    if (files && files.length > 0) {
-                        files.forEach(file => {
-                            let src = '';
-                            if (file instanceof File) {
-                                const reader = new FileReader();
-                                reader.onload = function(e) {
-                                    renderImg(e.target.result);
-                                }
-                                reader.readAsDataURL(file);
-                            } else if (typeof file === 'string') {
-
-                                src = file;
-                                if (archiveFolder && !src.includes('/') && !src.startsWith('data:')) {
-                                    src = 'arsip/' + archiveFolder + '/' + src;
-                                } else if (!src.includes('/') && !src.startsWith('data:')) {
-                                    // Default Uploads (Standard Notulensi)
-                                    if (title === 'DOKUMENTASI') {
-                                        src = 'uploads/dokumentasi/' + src;
-                                    } else {
-                                        src = 'uploads/absensi/' + src;
-                                    }
-                                }
-                                renderImg(src);
+                    function renderImg(s) {
+                        const img = document.createElement('img');
+                        img.src = s;
+                        if (isLandscape) {
+                            // Adjust height based on number of files
+                            if (files.length > 1) {
+                                img.style.cssText = 'max-width: 100%; max-height: 42%; object-fit: contain; margin-bottom: 20px;';
+                            } else {
+                                img.style.cssText = 'max-width: 100%; max-height: 90%; object-fit: contain;';
                             }
-
-                            function renderImg(s) {
-                                const img = document.createElement('img');
-                                img.src = s;
-                                if (isLandscape) {
-                                    img.style.cssText = 'max-width: 100%; max-height: 90%; object-fit: contain;';
-                                } else {
-                                    img.style.cssText = 'max-width: 90%; max-height: 420px; object-fit: contain;';
-                                }
-                                imgContainer.appendChild(img);
-                            }
-                        });
+                        } else {
+                            // Portrait (Dokumentasi)
+                            img.style.cssText = 'max-width: 90%; max-height: 420px; object-fit: contain;';
+                        }
+                        imgContainer.appendChild(img);
                     }
+                });
+            }
 
-                    div.appendChild(imgContainer);
-                    paper.appendChild(div);
-                }
-
-
-                /* =========================
-                   UPDATE PREVIEW
-                ========================= */
-                function updatePreview() {
-                    const get = n => document.querySelector(`[name="${n}"]`)?.value || '';
-
-                    document.getElementById('pv_unit').innerHTML = nl2br(get('unit_kerja'));
-                    document.getElementById('pv_pimpinan').innerHTML = nl2br(get('pimpinan'));
-                    document.getElementById('pv_tempat').innerHTML = nl2br(get('tempat'));
-                    document.getElementById('pv_topik').innerHTML = nl2br(get('topik'));
-                    document.getElementById('pv_lampiran').innerHTML = nl2br(get('lampiran'));
-                    document.getElementById('pv_peserta').innerHTML = nl2br(get('peserta'));
-                    document.getElementById('pv_agenda').innerHTML = nl2br(get('agenda'));
-
-                    const mul = get('pukul_mulai');
-                    const sel = get('pukul_selesai');
-                    document.getElementById('pv_pukul').textContent =
-                        mul && sel ? `${mul} – ${sel} WIB` : '';
-
-                    const tgl = get('tanggal');
-                    if (tgl) {
-                        const d = new Date(tgl);
-                        const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-                        document.getElementById('pv_tgl').textContent =
-                            `${d.getDate()} ${bulan[d.getMonth()]} ${d.getFullYear()}`;
-                    }
-
-                    if (tinymce.get('editor-pembukaan')) {
-                        document.getElementById('pv_pembukaan').innerHTML =
-                            tinymce.get('editor-pembukaan').getContent();
-                    }
-
-                    if (tinymce.get('editor-pembahasan')) {
-                        document.getElementById('pv_pembahasan').innerHTML =
-                            tinymce.get('editor-pembahasan').getContent();
-                    }
-
-                    if (tinymce.get('editor-kesimpulan')) {
-                        document.getElementById('pv_kesimpulan').innerHTML =
-                            tinymce.get('editor-kesimpulan').getContent();
-                    }
-
-                    // UPDATE SIGNATURE PREVIEW
-                    const p_tempat = get('p_tempat');
-                    const p_tanggal = get('p_tanggal');
-                    const p_notulis = get('p_notulis');
-
-                    let dateStr = '';
-                    if (p_tanggal) {
-                        const d = new Date(p_tanggal);
-                        const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-                        dateStr = `${d.getDate()} ${bulan[d.getMonth()]} ${d.getFullYear()}`;
-                    }
-
-                    const signatureText = (p_tempat && dateStr) ? `${p_tempat}, ${dateStr}` :
-                        (p_tempat ? p_tempat : dateStr);
-
-                    const elTempatTgl = document.getElementById('pv_tempat_tgl');
-                    if (elTempatTgl) elTempatTgl.textContent = signatureText;
-
-                    const elNotulis = document.getElementById('pv_notulis');
-                    if (elNotulis) elNotulis.textContent = p_notulis;
-                }
-
-                /* =========================
-                   SIMPAN KE SESSION (AJAX)
-                ========================= */
+            div.appendChild(imgContainer);
+            paper.appendChild(div);
+        }
 
 
-                /* =========================
-                   PREVIEW
-                ========================= */
-                function previewNotulensi() {
-                    saveNotulensi();
+        /* =========================
+           UPDATE PREVIEW
+        ========================= */
+        function updatePreview() {
+            const get = n => document.querySelector(`[name="${n}"]`)?.value || '';
+
+            document.getElementById('pv_unit').innerHTML = nl2br(get('unit_kerja'));
+            document.getElementById('pv_pimpinan').innerHTML = nl2br(get('pimpinan'));
+            document.getElementById('pv_tempat').innerHTML = nl2br(get('tempat'));
+            document.getElementById('pv_topik').innerHTML = nl2br(get('topik'));
+            document.getElementById('pv_lampiran').innerHTML = nl2br(get('lampiran'));
+            document.getElementById('pv_peserta').innerHTML = nl2br(get('peserta'));
+            document.getElementById('pv_agenda').innerHTML = nl2br(get('agenda'));
+
+            const mul = get('pukul_mulai');
+            const sel = get('pukul_selesai');
+            document.getElementById('pv_pukul').textContent =
+                mul && sel ? `${mul} – ${sel} WIB` : '';
+
+            const tgl = get('tanggal');
+            if (tgl) {
+                const d = new Date(tgl);
+                const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                document.getElementById('pv_tgl').textContent =
+                    `${d.getDate()} ${bulan[d.getMonth()]} ${d.getFullYear()}`;
+            }
+
+            if (tinymce.get('editor-pembukaan')) {
+                document.getElementById('pv_pembukaan').innerHTML =
+                    tinymce.get('editor-pembukaan').getContent();
+            }
+
+            if (tinymce.get('editor-pembahasan')) {
+                document.getElementById('pv_pembahasan').innerHTML =
+                    tinymce.get('editor-pembahasan').getContent();
+            }
+
+            if (tinymce.get('editor-kesimpulan')) {
+                document.getElementById('pv_kesimpulan').innerHTML =
+                    tinymce.get('editor-kesimpulan').getContent();
+            }
+
+            // UPDATE SIGNATURE PREVIEW
+            const p_tempat = get('p_tempat');
+            const p_tanggal = get('p_tanggal');
+            const p_notulis = get('p_notulis');
+
+            let dateStr = '';
+            if (p_tanggal) {
+                const d = new Date(p_tanggal);
+                const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                dateStr = `${d.getDate()} ${bulan[d.getMonth()]} ${d.getFullYear()}`;
+            }
+
+            const signatureText = (p_tempat && dateStr) ? `${p_tempat}, ${dateStr}` :
+                (p_tempat ? p_tempat : dateStr);
+
+            const elTempatTgl = document.getElementById('pv_tempat_tgl');
+            if (elTempatTgl) elTempatTgl.textContent = signatureText;
+
+            const elNotulis = document.getElementById('pv_notulis');
+            if (elNotulis) elNotulis.textContent = p_notulis;
+        }
+
+        /* =========================
+           SIMPAN KE SESSION (AJAX)
+        ========================= */
+
+
+        /* =========================
+           PREVIEW
+        ========================= */
+        function previewNotulensi() {
+            saveNotulensi();
+            setTimeout(() => {
+                window.location.href = 'index.php?page=preview_notulensi';
+            }, 300);
+        }
+
+        /* =========================
+           LOCAL STORAGE
+        ========================= */
+        /* =========================
+           LOCAL STORAGE
+        ========================= */
+        function loadFromLocalStorage() {
+            // 1. Check legacy 'notulensiData' first
+            const legacy = localStorage.getItem('notulensiData');
+            if (legacy) {
+                const d = JSON.parse(legacy);
+                const oldPembukaan = "<p>Rapat dimulai dengan sambutan pembukaan dari Bapak Satriana Yasmuarto..</p>";
+                const oldPembahasan = "<p><strong>a. Rancangan Kegiatan dan Jadwal Program Desa Cantik</strong></p><p>..</p>";
+                if (d.pembukaan === oldPembukaan && d.pembahasan === oldPembahasan) {
+                    localStorage.removeItem('notulensiData');
+                    // Reset to new defaults if detected old junk
                     setTimeout(() => {
-                        window.location.href = 'index.php?page=preview_notulensi';
-                    }, 300);
+                        if (tinymce.get('editor-pembukaan')) tinymce.get('editor-pembukaan').setContent("Silakan isi pembukaan rapat di sini.");
+                        if (tinymce.get('editor-pembahasan')) tinymce.get('editor-pembahasan').setContent("Silakan isi pembahasan dan diskusi di sini.");
+                    }, 500);
+                    return;
                 }
+            }
 
-                /* =========================
-                   LOCAL STORAGE
-                ========================= */
-                /* =========================
-                   LOCAL STORAGE
-                ========================= */
-                function loadFromLocalStorage() {
-                    // 1. Check legacy 'notulensiData' first
-                    const legacy = localStorage.getItem('notulensiData');
-                    if (legacy) {
-                        const d = JSON.parse(legacy);
-                        const oldPembukaan = "<p>Rapat dimulai dengan sambutan pembukaan dari Bapak Satriana Yasmuarto..</p>";
-                        const oldPembahasan = "<p><strong>a. Rancangan Kegiatan dan Jadwal Program Desa Cantik</strong></p><p>..</p>";
-                        if (d.pembukaan === oldPembukaan && d.pembahasan === oldPembahasan) {
-                            localStorage.removeItem('notulensiData');
-                            // Reset to new defaults if detected old junk
-                            setTimeout(() => {
-                                if (tinymce.get('editor-pembukaan')) tinymce.get('editor-pembukaan').setContent("Silakan isi pembukaan rapat di sini.");
-                                if (tinymce.get('editor-pembahasan')) tinymce.get('editor-pembahasan').setContent("Silakan isi pembahasan dan diskusi di sini.");
-                            }, 500);
-                            return;
-                        }
-                    }
+            // 2. Load Real Draft 'notulensi_draft'
+            const saved = localStorage.getItem('notulensi_draft');
+            if (!saved) return;
 
-                    // 2. Load Real Draft 'notulensi_draft'
-                    const saved = localStorage.getItem('notulensi_draft');
-                    if (!saved) return;
+            try {
+                const d = JSON.parse(saved);
+                // Load Form Fields
+                Object.keys(d).forEach(k => {
+                    if (k === 'dokumentasi' || k === 'absensi') return;
+                    const el = document.querySelector(`[name="${k}"]`);
+                    if (el) el.value = d[k];
+                });
 
-                    try {
-                        const d = JSON.parse(saved);
-                        // Load Form Fields
-                        Object.keys(d).forEach(k => {
-                            if (k === 'dokumentasi' || k === 'absensi') return;
-                            const el = document.querySelector(`[name="${k}"]`);
-                            if (el) el.value = d[k];
-                        });
+                setTimeout(() => {
+                    if (tinymce.get('editor-pembukaan')) tinymce.get('editor-pembukaan').setContent(d.pembukaan || '');
+                    if (tinymce.get('editor-pembahasan')) tinymce.get('editor-pembahasan').setContent(d.pembahasan || '');
+                    if (tinymce.get('editor-kesimpulan')) tinymce.get('editor-kesimpulan').setContent(d.kesimpulan || '');
+                    updatePreview();
+                }, 500);
 
-                        setTimeout(() => {
-                            if (tinymce.get('editor-pembukaan')) tinymce.get('editor-pembukaan').setContent(d.pembukaan || '');
-                            if (tinymce.get('editor-pembahasan')) tinymce.get('editor-pembahasan').setContent(d.pembahasan || '');
-                            if (tinymce.get('editor-kesimpulan')) tinymce.get('editor-kesimpulan').setContent(d.kesimpulan || '');
-                            updatePreview();
-                        }, 500);
+                updateNavUI();
+            } catch (e) {
+                console.error("Error loading draft", e);
+            }
+        }
 
-                        updateNavUI();
-                    } catch (e) {
-                        console.error("Error loading draft", e);
-                    }
-                }
+        /* =========================
+           NOTIF
+        ========================= */
+        function showNotif() {
+            const n = document.getElementById('notification');
+            if (!n) return;
+            n.classList.add('show');
+            setTimeout(() => n.classList.remove('show'), 1200);
+        }
 
-                /* =========================
-                   NOTIF
-                ========================= */
-                function showNotif() {
-                    const n = document.getElementById('notification');
-                    if (!n) return;
-                    n.classList.add('show');
-                    setTimeout(() => n.classList.remove('show'), 1200);
-                }
-
-                /* =========================
-                   TINYMCE (FIXED)
-                ========================= */
-                const tinyConfig = {
-                    license_key: 'gpl',
-                    menubar: true, // [UPGRADE] Tampilkan Menu Bar ala Word
-                    branding: false,
-                    statusbar: true, // [UPGRADE] Tampilkan Status Bar
-                    plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount',
-                    toolbar: 'undo redo | blocks | ' +
-                        'bold italic underline strikethrough | alignleft aligncenter ' +
-                        'alignright alignjustify | bullist numlist outdent indent | ' +
-                        'removeformat | indent_first',
-                    content_style: `
+        /* =========================
+           TINYMCE (FIXED)
+        ========================= */
+        const tinyConfig = {
+            license_key: 'gpl',
+            menubar: true, // [UPGRADE] Tampilkan Menu Bar ala Word
+            branding: false,
+            statusbar: true, // [UPGRADE] Tampilkan Status Bar
+            plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount',
+            toolbar: 'undo redo | blocks | ' +
+                'bold italic underline strikethrough | alignleft aligncenter ' +
+                'alignright alignjustify | bullist numlist outdent indent | ' +
+                'removeformat | indent_first',
+            content_style: `
                         body { font-family: Arial, sans-serif; font-size: 11pt; }
                         .first-line-indent { text-indent: 40px; }
                         p { margin-top: 0; margin-bottom: 10px; }
                     `,
-                    setup: ed => {
-                        ed.on('change keyup', updatePreview);
+            setup: ed => {
+                ed.on('change keyup', updatePreview);
 
-                        // Register Custom Format
-                        ed.on('init', function() {
-                            ed.formatter.register('myIndent', {
-                                block: 'p',
-                                classes: 'first-line-indent'
-                            });
-                        });
+                // Register Custom Format
+                ed.on('init', function() {
+                    ed.formatter.register('myIndent', {
+                        block: 'p',
+                        classes: 'first-line-indent'
+                    });
+                });
 
-                        // Register Custom Button
-                        ed.ui.registry.addButton('indent_first', {
-                            icon: 'indent', // Using standard icon, or we could use 'paragraph'
-                            tooltip: 'Indentasi Baris Pertama (Special)',
-                            onAction: function(_) {
-                                ed.formatter.toggle('myIndent');
-                            }
-                        });
+                // Register Custom Button
+                ed.ui.registry.addButton('indent_first', {
+                    icon: 'indent', // Using standard icon, or we could use 'paragraph'
+                    tooltip: 'Indentasi Baris Pertama (Special)',
+                    onAction: function(_) {
+                        ed.formatter.toggle('myIndent');
                     }
-                };
+                });
+            }
+        };
 
 
 
-                if (typeof tinymce !== 'undefined') {
-                    tinymce.init({
-                        selector: '#editor-pembukaan',
-                        height: 300,
-                        ...tinyConfig
-                    });
+        if (typeof tinymce !== 'undefined') {
+            tinymce.init({
+                selector: '#editor-pembukaan',
+                height: 300,
+                ...tinyConfig
+            });
 
-                    tinymce.init({
-                        selector: '#editor-pembahasan',
-                        height: 1000,
-                        ...tinyConfig
-                    });
+            tinymce.init({
+                selector: '#editor-pembahasan',
+                height: 1000,
+                ...tinyConfig
+            });
 
-                    tinymce.init({
-                        selector: '#editor-kesimpulan',
-                        height: 250,
-                        license_key: 'gpl',
-                        menubar: false,
-                        branding: false,
-                        statusbar: false,
-                        plugins: 'lists',
-                        toolbar: false,
-                        content_style: `
+            tinymce.init({
+                selector: '#editor-kesimpulan',
+                height: 250,
+                license_key: 'gpl',
+                menubar: false,
+                branding: false,
+                statusbar: false,
+                plugins: 'lists',
+                toolbar: false,
+                content_style: `
             ul.checklist {
                 list-style: none;
                 padding-left: 0;
@@ -1907,196 +1946,213 @@ if ($is_print) {
                 font-weight: bold;
             }
         `,
-                        setup: editor => {
-                            editor.on('keydown', e => {
-                                if (e.key === 'Enter') {
-                                    const content = editor.getContent();
-                                    if (!content.includes('<ul')) {
-                                        editor.setContent('<ul class="checklist"><li></li></ul>');
-                                        e.preventDefault();
-                                    }
-                                }
-                            });
-
-                            editor.on('change keyup', updatePreview);
+                setup: editor => {
+                    editor.on('keydown', e => {
+                        if (e.key === 'Enter') {
+                            const content = editor.getContent();
+                            if (!content.includes('<ul')) {
+                                editor.setContent('<ul class="checklist"><li></li></ul>');
+                                e.preventDefault();
+                            }
                         }
                     });
+
+                    editor.on('change keyup', updatePreview);
                 }
+            });
+        }
 
-                /* =========================
-                   EVENT
-                ========================= */
-                window.addEventListener('load', () => {
-                    const isLoadedFromArchive = <?= $is_loaded_from_archive ? 'true' : 'false' ?>;
-                    if (!isLoadedFromArchive) {
-                        // loadFromLocalStorage(); // Only load local storage if not editing archive
-                    }
+        /* =========================
+           EVENT
+        ========================= */
+        window.addEventListener('load', () => {
+            const isLoadedFromArchive = <?= $is_loaded_from_archive ? 'true' : 'false' ?>;
+            if (!isLoadedFromArchive) {
+                // loadFromLocalStorage(); // Only load local storage if not editing archive
+            }
 
-                    updateNavUI(); // Init Default
+            updateNavUI(); // Init Default
 
-                    // Pass PHP Image Arrays to JS
-                    const existingDocFiles = <?= json_encode($dokumentasi_files ?? []) ?>;
-                    const existingAbsFiles = <?= json_encode($absensi_files ?? []) ?>;
+            // Pass PHP Image Arrays to JS
+            const existingDocFiles = <?= json_encode($dokumentasi_files ?? []) ?>;
+            const existingAbsFiles = <?= json_encode($absensi_files ?? []) ?>;
 
-                    // Store globally to use in updatePreview
-                    window.serverDocFiles = existingDocFiles;
-                    window.serverAbsFiles = existingAbsFiles;
+            // Store globally to use in updatePreview
+            window.serverDocFiles = existingDocFiles;
+            window.serverAbsFiles = existingAbsFiles;
 
-                    // textarea NON TinyMCE saja
-                    document.querySelectorAll('textarea:not(#editor-pembukaan):not(#editor-pembahasan):not(#editor-kesimpulan)')
-                        .forEach(t => {
-                            autoResize(t);
-                            t.addEventListener('input', () => {
-                                autoResize(t);
-                                updatePreview();
-                            });
-                        });
-
-                    document.querySelectorAll('input').forEach(i => {
-                        i.addEventListener('input', updatePreview);
+            // textarea NON TinyMCE saja
+            document.querySelectorAll('textarea:not(#editor-pembukaan):not(#editor-pembahasan):not(#editor-kesimpulan)')
+                .forEach(t => {
+                    autoResize(t);
+                    t.addEventListener('input', () => {
+                        autoResize(t);
+                        updatePreview();
                     });
-
-                    // File inputs - Trigger Image Preview
-                    const fDoc = document.getElementById('inputDokumentasi');
-                    const fAbs = document.getElementById('inputAbsensi');
-                    if (fDoc) fDoc.addEventListener('change', previewImages);
-                    if (fAbs) fAbs.addEventListener('change', previewImages);
-
-                    updatePreview();
-                    // Render Initial Images (including Server Files)
-                    previewImages();
-                    switchPage(1);
                 });
-                /* =========================
-                   CETAK PDF & ARCHIVE
-                ========================= */
-                function cetakPDF(btn) {
-                    const form = document.getElementById('notulenForm');
-                    const originalText = btn.innerText;
 
-                    // 1. Validasi Input Penting
-                    const namaKegiatan = form.querySelector('[name="nama_kegiatan"]').value.trim();
-                    if (!namaKegiatan) {
-                        alert('Mohon isi Nama Kegiatan terlebih dahulu.');
-                        return;
+            document.querySelectorAll('input').forEach(i => {
+                i.addEventListener('input', updatePreview);
+            });
+
+            // File inputs - Trigger Image Preview
+            const fDoc = document.getElementById('inputDokumentasi');
+            const fAbs = document.getElementById('inputAbsensi');
+
+            if (fDoc) {
+                fDoc.addEventListener('change', function(e) {
+                    for (let file of this.files) {
+                        window.dtDokumentasi.items.add(file);
+                    }
+                    this.files = window.dtDokumentasi.files;
+                    previewImages();
+                });
+            }
+            if (fAbs) {
+                fAbs.addEventListener('change', function(e) {
+                    for (let file of this.files) {
+                        window.dtAbsensi.items.add(file);
+                    }
+                    this.files = window.dtAbsensi.files;
+                    previewImages();
+                });
+            }
+
+            updatePreview();
+            // Render Initial Images (including Server Files)
+            previewImages();
+            switchPage(1);
+        });
+        /* =========================
+           CETAK PDF & ARCHIVE
+        ========================= */
+        function cetakPDF(btn) {
+            const form = document.getElementById('notulenForm');
+            const originalText = btn.innerText;
+
+            // 1. Validasi Input Penting
+            const namaKegiatan = form.querySelector('[name="nama_kegiatan"]').value.trim();
+            if (!namaKegiatan) {
+                alert('Mohon isi Nama Kegiatan terlebih dahulu.');
+                return;
+            }
+
+            // Update UI
+            btn.innerText = 'Menyimpan...';
+            btn.disabled = true;
+
+            // Sync TinyMCE (Editor Teks)
+            if (typeof tinymce !== 'undefined') tinymce.triggerSave();
+
+            const data = new FormData(form);
+
+            // 2. Tentukan URL Action berdasarkan lokasi file
+            let saveUrl = 'pages/save_notulensi.php';
+            let pdfUrlBase = 'pdf/generate_notulensi.php';
+
+            if (window.location.pathname.includes('/pages/')) {
+                saveUrl = 'save_notulensi.php';
+                pdfUrlBase = '../pdf/generate_notulensi.php';
+            }
+
+            fetch(saveUrl, {
+                    method: 'POST',
+                    body: data
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok: ' + response.statusText);
+                    }
+                    return response.text();
+                })
+                .then(result => {
+                    // Trim dan ambil hanya angka
+                    let idNotulen = result.trim();
+                    // Hapus karakter non-digit (untuk bersihkan BOM atau whitespace bandel)
+                    let cleanId = idNotulen.replace(/\D/g, '');
+                    let idValid = parseInt(cleanId);
+
+                    if (!isNaN(idValid) && idValid > 0) {
+                        // Update ID di form supaya save berikutnya jadi UPDATE
+                        const inputId = form.querySelector('[name="id_undangan"]');
+                        if (inputId && inputId.value == 0) inputId.value = idValid;
+
+                        // Buka PDF di tab baru
+                        btn.innerText = 'Membuka PDF...';
+                        const tgl = form.querySelector('[name="p_tanggal"]')?.value || '';
+                        const pdfUrl = pdfUrlBase + '?id=' + idValid + '&tgl=' + encodeURIComponent(tgl);
+                        window.open(pdfUrl, '_blank');
+                    } else {
+                        alert('Gagal menyimpan sebelum cetak PDF. Response: ' + idNotulen);
                     }
 
-                    // Update UI
-                    btn.innerText = 'Menyimpan...';
-                    btn.disabled = true;
+                    // Reset button
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                })
+                .catch(err => {
+                    alert('Terjadi kesalahan koneksi atau error sistem. Cek konsol browser.');
+                    console.error('Fetch Error:', err);
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                });
+        }
 
-                    // Sync TinyMCE (Editor Teks)
-                    if (typeof tinymce !== 'undefined') tinymce.triggerSave();
+        function saveNotulensi() {
+            // Validasi Nama Kegiatan
+            const form = document.getElementById('notulenForm');
+            const namaKegiatan = form.querySelector('[name="nama_kegiatan"]').value.trim();
 
-                    const data = new FormData(form);
-
-                    // 2. Tentukan URL Action berdasarkan lokasi file
-                    let saveUrl = 'pages/save_notulensi.php';
-                    let pdfUrlBase = 'pdf/generate_notulensi.php';
-
-                    if (window.location.pathname.includes('/pages/')) {
-                        saveUrl = 'save_notulensi.php';
-                        pdfUrlBase = '../pdf/generate_notulensi.php';
-                    }
-
-                    fetch(saveUrl, {
-                            method: 'POST',
-                            body: data
-                        })
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('Network response was not ok: ' + response.statusText);
-                            }
-                            return response.text();
-                        })
-                        .then(result => {
-                            // Trim dan ambil hanya angka
-                            let idNotulen = result.trim();
-                            // Hapus karakter non-digit (untuk bersihkan BOM atau whitespace bandel)
-                            let cleanId = idNotulen.replace(/\D/g, '');
-                            let idValid = parseInt(cleanId);
-
-                            if (!isNaN(idValid) && idValid > 0) {
-                                // Update ID di form supaya save berikutnya jadi UPDATE
-                                const inputId = form.querySelector('[name="id_undangan"]');
-                                if (inputId && inputId.value == 0) inputId.value = idValid;
-
-                                // Buka PDF di tab baru
-                                btn.innerText = 'Membuka PDF...';
-                                const tgl = form.querySelector('[name="p_tanggal"]')?.value || '';
-                                const pdfUrl = pdfUrlBase + '?id=' + idValid + '&tgl=' + encodeURIComponent(tgl);
-                                window.open(pdfUrl, '_blank');
-                            } else {
-                                alert('Gagal menyimpan sebelum cetak PDF. Response: ' + idNotulen);
-                            }
-
-                            // Reset button
-                            btn.innerText = originalText;
-                            btn.disabled = false;
-                        })
-                        .catch(err => {
-                            alert('Terjadi kesalahan koneksi atau error sistem. Cek konsol browser.');
-                            console.error('Fetch Error:', err);
-                            btn.innerText = originalText;
-                            btn.disabled = false;
-                        });
+            if (!namaKegiatan) {
+                // Tampilkan notifikasi di atas form
+                let notif = document.getElementById('validation-notif');
+                if (!notif) {
+                    notif = document.createElement('div');
+                    notif.id = 'validation-notif';
+                    notif.style.cssText = 'background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ffeeba; font-weight: bold; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);';
+                    // Insert before the form tabs or title
+                    const container = document.querySelector('.card-body');
+                    container.insertBefore(notif, container.firstChild);
                 }
+                notif.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Harap isi "Nama Kegiatan Rapat" terlebih dahulu sebelum menyimpan.';
 
-                function saveNotulensi() {
-                    // Validasi Nama Kegiatan
-                    const form = document.getElementById('notulenForm');
-                    const namaKegiatan = form.querySelector('[name="nama_kegiatan"]').value.trim();
+                // Scroll ke atas
+                document.querySelector('.main-content').scrollTop = 0; // Scroll container content
+                document.documentElement.scrollTop = 0; // Scroll body just in case
 
-                    if (!namaKegiatan) {
-                        // Tampilkan notifikasi di atas form
-                        let notif = document.getElementById('validation-notif');
-                        if (!notif) {
-                            notif = document.createElement('div');
-                            notif.id = 'validation-notif';
-                            notif.style.cssText = 'background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ffeeba; font-weight: bold; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);';
-                            // Insert before the form tabs or title
-                            const container = document.querySelector('.card-body');
-                            container.insertBefore(notif, container.firstChild);
-                        }
-                        notif.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Harap isi "Nama Kegiatan Rapat" terlebih dahulu sebelum menyimpan.';
+                return; // Stop save
+            }
 
-                        // Scroll ke atas
-                        document.querySelector('.main-content').scrollTop = 0; // Scroll container content
-                        document.documentElement.scrollTop = 0; // Scroll body just in case
+            if (typeof tinymce !== 'undefined') tinymce.triggerSave();
 
-                        return; // Stop save
+            const data = new FormData(form);
+
+            fetch('pages/save_notulensi.php', {
+                    method: 'POST',
+                    body: data
+                })
+                .then(r => r.text())
+                .then(res => {
+                    // Bersihkan response dari karakter non-digit
+                    let cleanId = res.replace(/\D/g, '');
+                    let idValid = parseInt(cleanId);
+
+                    if (!isNaN(idValid) && idValid > 0) {
+                        showNotif();
+                        // Update ID di form jika data baru, supaya save berikutnya jadi UPDATE
+                        const form = document.getElementById('notulenForm');
+                        const inputId = form.querySelector('[name="id_undangan"]');
+                        if (inputId && inputId.value == 0) inputId.value = idValid;
+                    } else {
+                        // Fallback jika response bukan angka
+                        if (res.trim() === 'OK') showNotif();
+                        else alert('Gagal simpan: ' + res);
                     }
-
-                    if (typeof tinymce !== 'undefined') tinymce.triggerSave();
-
-                    const data = new FormData(form);
-
-                    fetch('pages/save_notulensi.php', {
-                            method: 'POST',
-                            body: data
-                        })
-                        .then(r => r.text())
-                        .then(res => {
-                            // Bersihkan response dari karakter non-digit
-                            let cleanId = res.replace(/\D/g, '');
-                            let idValid = parseInt(cleanId);
-
-                            if (!isNaN(idValid) && idValid > 0) {
-                                showNotif();
-                                // Update ID di form jika data baru, supaya save berikutnya jadi UPDATE
-                                const form = document.getElementById('notulenForm');
-                                const inputId = form.querySelector('[name="id_undangan"]');
-                                if (inputId && inputId.value == 0) inputId.value = idValid;
-                            } else {
-                                // Fallback jika response bukan angka
-                                if (res.trim() === 'OK') showNotif();
-                                else alert('Gagal simpan: ' + res);
-                            }
-                        })
-                        .catch(e => alert('Error: ' + e));
-                }
-            </script>
-        </div>
+                })
+                .catch(e => alert('Error: ' + e));
+        }
+    </script>
+    </div>
     </div>
 </body>
 
