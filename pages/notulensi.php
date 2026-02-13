@@ -700,8 +700,7 @@ if ($is_print) {
 
         .sidebar ul {
             /* kotak isi */
-            list-styl
-            e: none;
+            list-style: none;
             padding: 0;
             /* kotak teks */
             margin: 0;
