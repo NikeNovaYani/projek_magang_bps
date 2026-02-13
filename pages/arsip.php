@@ -899,38 +899,69 @@ $folders = get_folders($arsip_dir);
         }
 
         /* Notification */
+        /* Notification - Creative Bottom Popup */
         .notification {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 15px 25px;
-            background: white;
-            border-left: 5px solid #1976d2;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-            border-radius: 4px;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 25px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-left: none;
+            /* Remove old border */
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            border-radius: 50px;
             display: none;
             z-index: 2000;
-            animation: slideIn 0.3s ease-out;
+            font-weight: 500;
+            font-size: 14px;
+            display: flex;
+            /* Flex for Icon + Text */
+            align-items: center;
+            gap: 12px;
+            color: #334155;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            min-width: 300px;
+            justify-content: center;
         }
 
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
+        /* Animation */
+        .notification.show {
+            display: flex;
+            animation: slideUpBounce 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+        }
+
+        @keyframes slideUpBounce {
+            0% {
+                transform: translate(-50%, 100%);
                 opacity: 0;
             }
 
-            to {
-                transform: translateX(0);
+            100% {
+                transform: translate(-50%, 0);
                 opacity: 1;
             }
         }
 
+        /* Success & Error State Colors (Icon & Text) */
         .notification.success {
-            border-color: #2e7d32;
+            border-bottom: 3px solid #22c55e;
+        }
+
+        .notification.success i {
+            color: #22c55e;
+            font-size: 18px;
         }
 
         .notification.error {
-            border-color: #c62828;
+            border-bottom: 3px solid #ef4444;
+        }
+
+        .notification.error i {
+            color: #ef4444;
+            font-size: 18px;
         }
 
         /* Badge untuk membedakan Arsip Manual vs Otomatis */
@@ -1055,6 +1086,27 @@ $folders = get_folders($arsip_dir);
             /* Hidden by default */
             grid-column: 1/-1;
         }
+
+        /* RESPONSIVE SEARCH */
+        @media (max-width: 768px) {
+            .search-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .search-container input[type="text"],
+            .search-container input[type="date"] {
+                width: 100%;
+                flex: none;
+                /* Reset flex so they take full width */
+            }
+
+            /* Adjust icon position if needed, or keep absolute */
+            .search-container .fa-search {
+                top: 28px;
+                /* Approximate center of the first input */
+            }
+        }
     </style>
 </head>
 
@@ -1091,7 +1143,7 @@ $folders = get_folders($arsip_dir);
 
                     <div class="form-group">
                         <label class="form-label" style="margin-top:20px; border-bottom:1px dashed #ccc; padding-bottom:5px;">
-                            Upload File (Opsional) - Bisa dilakukan nanti
+                            Upload File
                         </label>
                         <div class="upload-grid">
                             <div class="upload-item">
@@ -1148,7 +1200,8 @@ $folders = get_folders($arsip_dir);
 
                 <?php
                 // 1. Panggil Data dari VIEW SQL
-                $query = "SELECT * FROM view_semua_arsip ORDER BY tanggal DESC";
+                // Modified: GROUP BY nama_kegiatan to merge duplicates visually
+                $query = "SELECT * FROM view_semua_arsip GROUP BY nama_kegiatan ORDER BY tanggal DESC";
                 $result = mysqli_query($koneksi, $query);
 
                 // 2. Loop Data Satu per Satu
@@ -1430,13 +1483,25 @@ $folders = get_folders($arsip_dir);
 
         function showNotification(msg, type) {
             const el = document.getElementById('notif');
-            const txt = document.getElementById('notif-msg');
-            el.className = 'notification ' + type;
-            txt.innerText = msg;
-            el.style.display = 'block';
+            // Determine Icon based on Type
+            let iconClass = 'fa-info-circle';
+            if (type === 'success') iconClass = 'fa-check-circle';
+            if (type === 'error') iconClass = 'fa-times-circle';
+
+            // Construct Inner HTML
+            el.innerHTML = `<i class="fas ${iconClass}"></i> <span>${msg}</span>`;
+
+            // Set Class for Animation and Color
+            el.className = 'notification show ' + type;
+
+            // Auto Hide
             setTimeout(() => {
-                el.style.display = 'none';
-            }, 3000);
+                el.classList.remove('show');
+                // Optional: completely hide after animation (using CSS transition or simple timeout)
+                setTimeout(() => {
+                    el.style.display = 'none';
+                }, 300);
+            }, 4000);
         }
 
         // Filter Arsip Function

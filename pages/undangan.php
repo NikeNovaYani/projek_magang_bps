@@ -142,6 +142,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['f_nomor'])) { // Simp
         }
     } else {
         // === INSERT ===
+
+        // Cek Duplikat Nama Kegiatan
+        $check_duplicate = mysqli_query($koneksi, "SELECT id_u FROM undangan WHERE nama_kegiatan = '$nama_kegiatan'");
+        if (mysqli_num_rows($check_duplicate) > 0) {
+            echo "<script>alert('Gagal: Nama kegiatan \"$nama_kegiatan\" sudah ada! Silakan gunakan nama lain.'); window.history.back();</script>";
+            exit;
+        }
+
         $sql_insert = "INSERT INTO undangan 
         (nama_kegiatan, nomor_surat, sifat, lampiran, perihal, tanggal_surat, kepada, isi_undangan, hari_tanggal_acara, waktu_acara, tempat_acara, agenda, id_pejabat) 
         VALUES 
@@ -167,7 +175,7 @@ $hal      = $_POST['f_hal']      ?? ($hal ?? 'Undangan Pembahasan Optimalisasi A
 $tglsurat = $_POST['f_tglsurat'] ?? ($tglsurat ?? date('Y-m-d'));
 $kepada   = $_POST['f_kepada']   ?? ($kepada ?? "1. Seluruh Ketua Tim BPS Kota Depok\n2. PPK BPS Kota Depok");
 $isi      = $_POST['f_isi']      ?? ($isi ?? 'Sehubungan dengan menjelang akan berakhirnya tahun anggaran 2025, Kepala BPS Kota Depok mengundang seluruh Ketua Tim dan PPK BPS Kota Depok untuk hadir dalam rapat yang akan diselenggarakan pada');
-$hari     = $_POST['f_hari']     ?? ($hari ?? '2024-11-11');
+$hari     = $_POST['f_hari']     ?? ($hari ?? 'Y-m-d');
 $waktu    = $_POST['f_waktu']    ?? ($waktu ?? '13:30');
 $tempat   = $_POST['f_tempat']   ?? ($tempat ?? 'Ruang Rapat BPS Kota Depok');
 $tempat   = $_POST['f_tempat']   ?? ($tempat ?? 'Ruang Rapat BPS Kota Depok');
@@ -321,20 +329,58 @@ function formatWaktu($w)
         }
 
         /* ===== RESPONSIVE ===== */
-        @media (max-width:768px) {
-            .container {
-                flex-direction: column;
+        /* Updated to 1366px to include Laptops */
+        @media (max-width: 1366px) {
+
+            /* 1. Reset Container Internal */
+            .main-content .container {
+                display: block !important;
+                width: 100% !important;
+                padding: 0 !important;
             }
 
-            .sidebar {
-                width: 100%;
-                order: -1;
-                height: auto;
-                position: relative;
+            /* 2. Sembunyikan Sidebar Internal (karena sudah ada di index.php) */
+            .main-content .sidebar {
+                display: none !important;
             }
 
-            .main-content {
-                margin-left: 0;
+            /* 3. Atur Konten Utama Internal */
+            .main-content .main-content {
+                margin-left: 160px !important;
+                width: 100% !important;
+                display: flex !important;
+                flex-direction: column !important;
+                /* Tumpuk atas bawah */
+                gap: 20px !important;
+                padding: 10px !important;
+            }
+
+            /* 4. Form Container Penuh */
+            .form-container {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin-bottom: 10px;
+            }
+
+            /* 5. Sheet Preview Responsif */
+            .sheet {
+                width: 100% !important;
+                max-width: 100% !important;
+                order: 2;
+                position: static !important;
+            }
+
+            /* Penyesuaian font size di mobile jika perlu */
+            .main-content .sheet .kop-text .instansi-name {
+                font-size: 14pt !important;
+            }
+
+            .main-content .sheet .kop-text .wilayah-name {
+                font-size: 12pt !important;
+            }
+
+            .main-content .sheet .content {
+                font-size: 11pt !important;
             }
         }
 
@@ -371,6 +417,7 @@ function formatWaktu($w)
             display: block;
             font-weight: bold;
             margin-bottom: 5px;
+            margin-top: 20px;
             font-size: 12pt;
             color: #1619ccff;
         }
@@ -562,6 +609,18 @@ function formatWaktu($w)
             animation: lineGrow 1s ease-in 0.5s forwards;
         }
 
+        @keyframes lineGrow {
+            from {
+                width: 0;
+                left: 50%;
+            }
+
+            to {
+                width: 100%;
+                left: 0;
+            }
+        }
+
         /* TinyMCE Fix */
         .tox-promotion {
             display: none !important;
@@ -589,7 +648,9 @@ function formatWaktu($w)
             <div class="form-container">
                 <form id="formUndangan" method="post">
                     <input type="hidden" name="id_u" value="<?= $id_undangan_edit ?>"> <!-- ID untuk Edit Mode -->
-                    <h3 class="card-head"><?= $is_edit_mode ? 'Edit Undangan' : 'Buat Undangan' ?></h3>
+                    <div class="card-head">
+                        <h3><?= $is_edit_mode ? 'Edit Undangan' : 'Buat Undangan' ?></h3>
+                    </div>
 
                     <?php if (!empty($msg_success)): ?>
                         <div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
@@ -604,13 +665,13 @@ function formatWaktu($w)
                     <?php endif; ?>
 
                     <label>Nama Kegiatan Rapat</label>
-                    <input name="f_nama_kegiatan" value="<?= htmlspecialchars($nama_kegiatan ?? '') ?>" placeholder="Contoh: Pembinaan Desa Cantik 2026" required>
+                    <input name="f_nama_kegiatan" value="<?= htmlspecialchars($nama_kegiatan ?? '') ?>" placeholder="Samakan dengan di Notulensi" required style="font-size: small ">
 
                     <label>Nomor Surat</label>
                     <input name="f_nomor" value="<?= htmlspecialchars($nomor) ?>">
 
                     <!--PERUBAHAN EMBEDED LINK -->
-                    <a href="https://github.com/NikeNovaYani"
+                    <a href="https://sites.google.com/view/permintaan-nomor-surat/no-surat-2025"
                         target="_blank" style="display: inline-block; margin-bottom: 20px; color: #1976d2; 
                 text-decoration: none; font-size: 10pt;"><i class="fas fa-external-link-alt"></i> Buat Nomor Surat</a>
 

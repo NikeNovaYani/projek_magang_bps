@@ -442,31 +442,17 @@ if ($is_print) {
             color: white;
         }
 
-        /* layout 2 panel */
+        /* layout 2 panel - Flexbox for Manual Control */
         .grid {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
             align-items: start;
         }
 
         /* Desktop: Preview (Left), Form (Right) */
         /* Removed order properties as per instruction */
-
-        @media (max-width: 900px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
-
-            /* Mobile: Form (Top), Preview (Bottom) */
-            .form-card {
-                order: 1;
-            }
-
-            .preview-card {
-                order: 2;
-            }
-        }
+        /* Removed @media (max-width: 900px) to prevent premature mobile layout */
 
         .card {
             background: var(--card);
@@ -476,6 +462,25 @@ if ($is_print) {
             overflow: hidden;
             margin-bottom: 30px;
         }
+
+        /* == FITUR BARU: KONTROL LEBAR PREVIEW == */
+        .preview-card {
+            /* Mencegah overflow flex item */
+            width: 620px;
+            margin: 0;
+            min-height: 297mm;
+            position: static
+            /* [INSTRUKSI PENGGUNA] 
+               Jika ingin mengatur lebar manual (misal 800px atau 60%):
+               1. Ganti flex-grow menjadi 0
+               2. Uncomment (hapus tanda / * * /) pada baris width di bawah ini
+            */
+
+            /* flex-grow: 0; */
+            /* width: 1000px; */
+        }
+
+
 
         .card-head {
             padding: 0px;
@@ -525,7 +530,9 @@ if ($is_print) {
         }
 
         .form-card {
-            width: 500px;
+            width: 550px;
+            flex-shrink: 0;
+            /* Jangan mengecil, tetap 550px */
             background: white;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -770,32 +777,156 @@ if ($is_print) {
 
         .main-content {
             flex: 1;
-            padding: 30px;
+            padding: 20px;
             overflow-y: auto;
-            margin-left: 150px;
+            margin-left: 140px;
+            /* Removed grid properties from here, let .grid handle layout */
         }
 
         /* ===== RESPONSIVE ===== */
-        @media (max-width:768px) {
-            .container {
+        @media (max-width: 768px) {
+
+            /* 1. Reset Container Internal */
+            .main-content .container {
+                display: block !important;
+                width: 100% !important;
+                padding: 0 !important;
+            }
+
+            /* 2. Sembunyikan Sidebar Internal */
+            .main-content .sidebar {
+                display: none !important;
+            }
+
+            /* 3. Atur Konten Utama Internal */
+            .main-content .main-content {
+                margin-left: 160px !important;
+                width: 100% !important;
+                display: flex !important;
+                flex-direction: column !important;
+                /* Tumpuk atas bawah */
+                gap: 20px !important;
+                padding: 10px !important;
+            }
+
+            /* Penyesuaian font size di mobile jika perlu */
+            .main-content .preview .kop-text .instansi-name {
+                font-size: 14pt !important;
+            }
+
+            .main-content .preview .kop-text .wilayah-name {
+                font-size: 12pt !important;
+            }
+
+            .main-content .preview .content {
+                font-size: 11pt !important;
+            }
+
+            /* 4. Grid Layout menjadi Stack */
+            .grid {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 20px !important;
+            }
+
+            /* 5. Form Card Lebar Penuh */
+            .form-card {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin-bottom: 10px;
+                /* Form di atas */
+            }
+
+            /* 6. Preview Card Lebar Penuh & di Bawah */
+            .preview-card {
+                width: 100% !important;
+                max-width: 100% !important;
+                order: 2;
+                /* Preview di bawah */
+                position: static !important;
+                /* Matikan sticky agar flow normal */
+            }
+
+            /* 7. Action Buttons Full Width */
+            .actions {
                 flex-direction: column;
             }
 
-            .sidebar {
+            .actions button {
                 width: 100%;
-                order: -1;
-                height: auto;
-                position: relative;
+                margin-bottom: 5px;
             }
 
-            .main-content {
-                margin-left: 0;
+            /* 8. Refine Preview Box (Fix Cutoff) */
+            #paperPreview {
+                height: auto !important;
+                aspect-ratio: unset !important;
+                overflow: visible !important;
+                /* Biarkan konten melebar ke bawah */
+                border: 1px solid #ddd;
+            }
+
+            .page-view,
+            .doc-page {
+                position: relative !important;
+                /* Jangan absolute agar bisa scroll/flow */
+                width: 100% !important;
+                height: auto !important;
+                padding: 10px !important;
+                /* Kurangi padding drastis */
+                left: auto !important;
+                top: auto !important;
+            }
+
+            /* Kecilkan font di preview mobile agar tabel muat */
+            .page-view table td,
+            .doc-page table td {
+                font-size: 10pt !important;
+                padding: 4px !important;
+            }
+
+            /* Tabel bisa discroll horizontal jika masih terlalu lebar */
+            .preview-box {
+                overflow-x: auto;
+            }
+
+            /* 9. Fix Documentation Content Alignment */
+            .doc-page {
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: flex-start !important;
+                align-items: center !important;
+                padding-top: 20px !important;
+            }
+
+            .doc-page>div {
+                /* Container gambar yang dibuat via JS */
+                height: auto !important;
+                /* Override inline height 90% */
+                min-height: 0 !important;
+                justify-content: flex-start !important;
+                margin-top: 0 !important;
+                gap: 20px !important;
+            }
+
+            .doc-page h3 {
+                margin-top: 0 !important;
+                margin-bottom: 20px !important;
+            }
+
+            .doc-page img {
+                max-width: 100% !important;
+                width: 100% !important;
+                height: auto !important;
+                margin-bottom: 20px !important;
+                object-fit: contain !important;
             }
         }
 
         /* print from page (ctrl+p) => hanya preview */
         @media print {
             .sidebar {
+
                 display: none;
             }
 
@@ -918,7 +1049,6 @@ if ($is_print) {
 
                 <div class="grid">
                     <!-- FORM -->
-                    <!-- FORM -->
                     <div class="card form-card">
                         <div class="card-head">
                             <h3>Buat Notulensi</h3>
@@ -962,7 +1092,7 @@ if ($is_print) {
                                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
                                             <div>
                                                 <label class="hint">Nama Kegiatan Rapat</label>
-                                                <textarea name="nama_kegiatan" rows="1" placeholder="Contoh: Pembinaan Desa Cantik 2026"><?= htmlspecialchars($nama_kegiatan ?? '') ?></textarea>
+                                                <textarea name="nama_kegiatan" rows="1" placeholder="Samakan dengan di Undangan" required style="font-size: small "><?= htmlspecialchars($nama_kegiatan ?? '') ?></textarea>
                                             </div>
                                             <div>
                                                 <label class="hint">Unit Kerja</label>

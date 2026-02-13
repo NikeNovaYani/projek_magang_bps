@@ -71,6 +71,7 @@ $page_title = $page_titles[$page] ?? 'UANG BPS Kota Depok';
 <head>
     <meta charset="UTF-8">
     <title><?= $page_title ?> - UANG BPS Kota Depok</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* ===== GLOBAL LAYOUT STYLES ===== */
@@ -91,6 +92,12 @@ $page_title = $page_titles[$page] ?? 'UANG BPS Kota Depok';
         }
 
         /* ===== SIDEBAR ===== */
+        .logout-item {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+        }
+
         .sidebar {
             width: 280px;
             height: 100vh;
@@ -171,21 +178,79 @@ $page_title = $page_titles[$page] ?? 'UANG BPS Kota Depok';
             width: calc(100% - 280px);
         }
 
-        /* Responsive */
+        /* ===== PERBAIKAN RESPONSIVE ===== */
         @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-            }
 
+            /* 1. Perbaikan Sidebar */
             .sidebar {
-                width: 100%;
-                height: auto;
-                position: relative;
+                position: fixed !important;
+                left: -280px !important;
+                /* Sembunyikan sepenuhnya ke kiri */
+                top: 0;
+                width: 280px !important;
+                height: 100vh !important;
+                z-index: 9999 !important;
+                transition: 0.3s all ease;
+                /* Perbaikan penulisan transition */
+                box-shadow: 10px 0 20px rgba(0, 0, 0, 0.2) !important;
+                display: block !important;
             }
 
-            .main-content {
-                margin-left: 0;
-                width: 100%;
+            .sidebar.active {
+                left: 0 !important;
+                /* Muncul saat tombol diklik */
+            }
+
+            .sidebar .logout-item {
+                position: relative !important;
+                bottom: auto !important;
+                margin-top: 20px;
+            }
+
+            /* 2. Perbaikan Konten Utama */
+            .main-content,
+            main,
+            .content {
+                margin-left: 0 !important;
+                width: 100% !important;
+                padding: 80px 15px 20px 15px !important;
+                display: block !important;
+                /* Pastikan tidak flex kesamping */
+            }
+
+            /* 3. Membuat Card Menjadi 1 Kolom (PENTING) */
+            /* Ganti .card-container dengan class pembungkus card di kodemu */
+            .card-container,
+            .row,
+            .grid-layout {
+                display: flex !important;
+                flex-direction: column !important;
+                width: 100% !important;
+                gap: 20px !important;
+            }
+
+            .card {
+                width: 100% !important;
+                /* Card memenuhi lebar layar HP */
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+            }
+
+            /* 4. Tombol Hamburger */
+            .hamburger-btn {
+                display: block !important;
+                position: fixed;
+                top: 15px;
+                left: 15px;
+                z-index: 2100;
+                background: #1976d2;
+                color: white;
+                border: none;
+                padding: 10px 15px;
+                border-radius: 5px;
+                font-size: 20px;
+                cursor: pointer;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
             }
         }
     </style>
@@ -194,6 +259,9 @@ $page_title = $page_titles[$page] ?? 'UANG BPS Kota Depok';
 <body>
 
     <div class="container">
+        <button class="hamburger-btn" onclick="toggleSidebar()" style="display: none;">
+            <i class="fas fa-bars"></i>
+        </button>
         <div class="sidebar">
             <h2>SI UANG</h2>
             <ul>
@@ -202,7 +270,7 @@ $page_title = $page_titles[$page] ?? 'UANG BPS Kota Depok';
                 <li><a href="index.php?page=notulensi" class="<?= $page === 'notulensi' ? 'active' : '' ?>"><i class="fas fa-file-alt"></i> Notulensi</a></li>
                 <li><a href="index.php?page=absensi" class="<?= $page === 'absensi' ? 'active' : '' ?>"><i class="fas fa-user-check"></i> Absensi</a></li>
                 <li><a href="index.php?page=arsip" class="<?= $page === 'arsip' ? 'active' : '' ?>"><i class="fas fa-archive"></i> Arsip</a></li>
-                <li style="position: absolute; bottom: 0; width: 100%;"><a href="index.php?page=logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                <li class="logout-item"><a href="index.php?page=logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </div>
 
@@ -247,6 +315,30 @@ $page_title = $page_titles[$page] ?? 'UANG BPS Kota Depok';
             ?>
         </div>
     </div>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('active');
+
+            // Opsional: Ganti ikon bars jadi 'times' (X) saat terbuka
+            const btnIcon = document.querySelector('.hamburger-btn i');
+            if (sidebar.classList.contains('active')) {
+                btnIcon.classList.replace('fa-bars', 'fa-times');
+            } else {
+                btnIcon.classList.replace('fa-times', 'fa-bars');
+            }
+        }
+
+        // Tutup sidebar otomatis jika user mengklik area konten utama
+        document.addEventListener('click', function(event) {
+            const sidebar = document.querySelector('.sidebar');
+            const btn = document.querySelector('.hamburger-btn');
+            if (!sidebar.contains(event.target) && !btn.contains(event.target) && sidebar.classList.contains('active')) {
+                toggleSidebar();
+            }
+        });
+    </script>
 
 </body>
 
