@@ -99,7 +99,7 @@ $page_title = $page_titles[$page] ?? 'UANG BPS Kota Depok';
         }
 
         .sidebar {
-            width: 280px;
+            width: 250px;
             height: 100vh;
             background-color: #ffffff;
             box-shadow: 5px 0 15px rgba(27, 110, 235, 0.1);

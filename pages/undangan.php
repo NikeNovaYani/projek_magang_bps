@@ -239,7 +239,7 @@ function formatWaktu($w)
 
         .sidebar {
             /* kotak navigasi */
-            width: 280px;
+            width: 250px;
             height: 100vh;
             background-color: #ffffff;
             box-shadow: 5px 0 15px rgba(27, 110, 235, 0.1);
@@ -329,7 +329,7 @@ function formatWaktu($w)
         }
 
         /* ===== RESPONSIVE ===== */
-        /* Updated to 1366px to include Laptops */
+        /* Updated to 1366px to stack on Laptops */
         @media (max-width: 1366px) {
 
             /* 1. Reset Container Internal */
@@ -357,17 +357,20 @@ function formatWaktu($w)
 
             /* 4. Form Container Penuh */
             .form-container {
-                width: 100% !important;
+                width: 500px !important;
                 max-width: 100% !important;
                 margin-bottom: 10px;
             }
 
             /* 5. Sheet Preview Responsif */
             .sheet {
-                width: 100% !important;
+                width: 210mm !important;
+                /* Keep A4 Width */
                 max-width: 100% !important;
                 order: 2;
                 position: static !important;
+                margin-left: 0px !important;
+                /* Center it */
             }
 
             /* Penyesuaian font size di mobile jika perlu */
@@ -405,7 +408,8 @@ function formatWaktu($w)
 
         /* Form Styling */
         .form-container {
-            width: 500px;
+            width: 300px;
+            /* Lebar form diperkecil sedikit */
             background: white;
             padding: 20px;
             border-radius: 8px;
@@ -482,6 +486,7 @@ function formatWaktu($w)
         /* Sheet Preview Styling */
         .sheet {
             width: 210mm;
+            /* A4 Width */
             background: white;
             padding: 20mm;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);

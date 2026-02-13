@@ -466,7 +466,7 @@ if ($is_print) {
         /* == FITUR BARU: KONTROL LEBAR PREVIEW == */
         .preview-card {
             /* Mencegah overflow flex item */
-            width: 620px;
+            width: 210mm;
             margin: 0;
             min-height: 297mm;
             position: static
@@ -697,7 +697,7 @@ if ($is_print) {
 
         .sidebar {
             /* kotak navigasi */
-            width: 280px;
+            width: 250px;
             height: 100vh;
             background-color: #ffffff;
             box-shadow: 5px 0 15px rgba(27, 110, 235, 0.1);

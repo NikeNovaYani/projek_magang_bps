@@ -561,7 +561,7 @@ $folders = get_folders($arsip_dir);
 
         .sidebar {
             /* kotak navigasi */
-            width: 280px;
+            width: 250px;
             height: 100vh;
             background-color: #ffffff;
             box-shadow: 5px 0 15px rgba(27, 110, 235, 0.1);
