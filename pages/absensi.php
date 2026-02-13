@@ -277,7 +277,7 @@ if (basename($_SERVER['PHP_SELF']) === basename(__FILE__)) {
     <div class="container">
         <!-- SIDEBAR -->
         <div class="sidebar">
-            <h2>UANG</h2>
+            <h2>SI UANG</h2>
             <ul>
                 <li><a href="index.php?page=beranda"><i class="fas fa-home"></i> Beranda</a></li>
                 <li><a href="index.php?page=undangan"><i class="fas fa-envelope"></i> Undangan</a></li>

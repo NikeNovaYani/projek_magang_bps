@@ -65,7 +65,7 @@
             </div>
 
             <div class="input-group">
-                <label>Password (Angka)</label>
+                <label>Password</label>
                 <input type="password" name="password" placeholder="Masukkan password" required>
                 <i class="fas fa-lock"></i>
             </div>

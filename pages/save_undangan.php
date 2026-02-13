@@ -19,10 +19,20 @@ $isi_undangan   = mysqli_real_escape_string($koneksi, $_POST['f_isi'] ?? ''); //
 $tanggal_surat  = $_POST['f_tglsurat'] ?? date('Y-m-d');
 
 // Data Acara
+// Data Acara
 $hari_tanggal   = $_POST['f_hari'] ?? date('Y-m-d');
-$waktu_mulai    = $_POST['f_mulai'] ?? '09:00';
-$waktu_selesai  = $_POST['f_selesai'] ?? 'Selesai';
-$waktu_acara    = $waktu_mulai . ' s.d ' . $waktu_selesai . ' WIB'; // Gabung biar rapi di DB
+
+// [FIX] Prioritize f_waktu from undangan.php
+if (isset($_POST['f_waktu']) && !empty($_POST['f_waktu'])) {
+    $waktu_mulai    = $_POST['f_waktu'];
+    $waktu_selesai  = 'Selesai';
+    $waktu_acara    = $waktu_mulai; // Simpan apa adanya sesuai input user
+} else {
+    $waktu_mulai    = $_POST['f_mulai'] ?? '09:00';
+    $waktu_selesai  = $_POST['f_selesai'] ?? 'Selesai';
+    $waktu_acara    = $waktu_mulai . ' s.d ' . $waktu_selesai . ' WIB'; // Gabung biar rapi di DB
+}
+
 $tempat         = mysqli_real_escape_string($koneksi, $_POST['f_tempat'] ?? '');
 $agenda         = mysqli_real_escape_string($koneksi, $_POST['f_agenda'] ?? '');
 
@@ -33,7 +43,7 @@ $_SESSION['undangan'] = [
     'kepada' => $kepada,
     'isi' => $isi_undangan, // [BARU] Simpan ke Session
     'tanggal' => $tanggal_surat,
-    'hari_tanggal' => $hari_tanggal,
+    'tanggal_acara' => $hari_tanggal, // [FIX] Key match for template
     'pukul_mulai' => $waktu_mulai,
     'pukul_selesai' => $waktu_selesai,
     'tempat' => $tempat,
