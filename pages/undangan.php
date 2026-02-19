@@ -408,7 +408,7 @@ function formatWaktu($w)
 
         /* Form Styling */
         .form-container {
-            width: 300px;
+            width: 500px;
             /* Lebar form diperkecil sedikit */
             background: white;
             padding: 20px;
