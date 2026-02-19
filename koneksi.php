@@ -1,5 +1,5 @@
 <?php
-$host     = "localhost";
+$host     = "localhost:3307";
 $username = "root";       // Default XAMPP/Laragon
 $password = "";           // Default biasanya kosong
 $database = "database_rapat";   // Nama database yang tadi dibuat

@@ -540,6 +540,7 @@ $folders = get_folders($arsip_dir);
     <meta charset="UTF-8">
     <title>Gudang Arsip - BPS Kota Depok</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         /* ===== RESET ===== */
         * {
@@ -1272,7 +1273,7 @@ $folders = get_folders($arsip_dir);
                                 </div>
                                 <!-- Delete File Button -->
                                 <div class="file-right">
-                                    <form method="post" onsubmit="return confirm('Hapus file undangan ini?');" style="margin:0;">
+                                    <form method="post" onsubmit="confirmDeleteFile(event, this, 'Hapus file undangan ini?')" style="margin:0;">
                                         <input type="hidden" name="hapus_file_item" value="1">
                                         <input type="hidden" name="id_ref" value="<?= $row['id_referensi'] ?>">
                                         <input type="hidden" name="file_type" value="undangan">
@@ -1327,7 +1328,7 @@ $folders = get_folders($arsip_dir);
                                 </div>
                                 <!-- Delete File Button -->
                                 <div class="file-right">
-                                    <form method="post" onsubmit="return confirm('Hapus file notulensi ini?');" style="margin:0;">
+                                    <form method="post" onsubmit="confirmDeleteFile(event, this, 'Hapus file notulensi ini?')" style="margin:0;">
                                         <input type="hidden" name="hapus_file_item" value="1">
                                         <input type="hidden" name="id_ref" value="<?= $row['id_referensi'] ?>">
                                         <input type="hidden" name="file_type" value="notulensi">
@@ -1383,7 +1384,7 @@ $folders = get_folders($arsip_dir);
                                 </div>
                                 <!-- Delete File Button -->
                                 <div class="file-right">
-                                    <form method="post" onsubmit="return confirm('Hapus file absensi ini?');" style="margin:0;">
+                                    <form method="post" onsubmit="confirmDeleteFile(event, this, 'Hapus file absensi ini?')" style="margin:0;">
                                         <input type="hidden" name="hapus_file_item" value="1">
                                         <input type="hidden" name="id_ref" value="<?= $row['id_referensi'] ?>">
                                         <input type="hidden" name="file_type" value="absensi">
@@ -1544,6 +1545,26 @@ $folders = get_folders($arsip_dir);
                     noResultMsg.style.display = hasVisible ? "none" : "block";
                 }
             }
+        }
+
+        // SweetAlert2 for File Deletion (Undangan, Notulensi, Absensi)
+        function confirmDeleteFile(event, form, titleMsg) {
+            event.preventDefault(); // Stop default submission
+
+            Swal.fire({
+                title: titleMsg,
+                text: "Tindakan ini tidak dapat dibatalkan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit(); // Submit programmatically
+                }
+            });
         }
     </script>
 </body>

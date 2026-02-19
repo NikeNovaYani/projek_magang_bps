@@ -133,9 +133,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['f_nomor'])) { // Simp
                   WHERE id_u = '$id_u'";
 
         if (mysqli_query($koneksi, $query)) {
-            $msg_success = "Data undangan berhasil diperbarui!";
+            $msg_success = "Perubahan berhasil disimpan!";
             // Refresh to ensure variables are updated
-            echo "<script>alert('$msg_success'); window.location.href='index.php?page=undangan&id=$id_u';</script>";
+            echo "<!DOCTYPE html><body>";
+            echo "<script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>";
+            echo "<script>
+                Swal.fire({
+                    title: 'Berhasil!',
+                    text: '$msg_success',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    timerProgressBar: true
+                }).then(() => {
+                    window.location.href='index.php?page=undangan&id=$id_u';
+                });
+            </script>";
+            echo "</body></html>";
             exit;
         } else {
             $msg_error = "Gagal memperbarui: " . mysqli_error($koneksi);
@@ -146,7 +160,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['f_nomor'])) { // Simp
         // Cek Duplikat Nama Kegiatan
         $check_duplicate = mysqli_query($koneksi, "SELECT id_u FROM undangan WHERE nama_kegiatan = '$nama_kegiatan'");
         if (mysqli_num_rows($check_duplicate) > 0) {
-            echo "<script>alert('Gagal: Nama kegiatan \"$nama_kegiatan\" sudah ada! Silakan gunakan nama lain.'); window.history.back();</script>";
+            echo "<!DOCTYPE html><body>";
+            echo "<script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>";
+            echo "<script>
+                Swal.fire({
+                    title: 'Gagal!',
+                    text: 'Nama kegiatan \"$nama_kegiatan\" sudah ada! Silakan gunakan nama lain.',
+                    icon: 'error'
+                }).then(() => {
+                    window.history.back();
+                });
+            </script>";
+            echo "</body></html>";
             exit;
         }
 
@@ -156,10 +181,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['f_nomor'])) { // Simp
         ('$nama_kegiatan', '$nomor_surat', '$sifat', '$lampiran', '$perihal', '$tanggal_surat', '$kepada', '$isi_undangan', '$hari_tanggal', '$waktu_acara', '$tempat_acara', '$agenda', $id_pejabat)";
 
         if (mysqli_query($koneksi, $sql_insert)) {
-            $msg_success = "Data undangan berhasil disimpan ke database!";
+            $msg_success = "Data undangan berhasil disimpan ke arsip!";
             $new_id = mysqli_insert_id($koneksi);
             // Redirect to Edit Mode
-            echo "<script>alert('$msg_success'); window.location.href='index.php?page=undangan&id=$new_id';</script>";
+            echo "<!DOCTYPE html><body>";
+            echo "<script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>";
+            echo "<script>
+                Swal.fire({
+                    title: 'Berhasil!',
+                    text: '$msg_success',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    timerProgressBar: true
+                }).then(() => {
+                    window.location.href='index.php?page=undangan&id=$new_id';
+                });
+            </script>";
+            echo "</body></html>";
             exit;
         } else {
             $msg_error = "Gagal menyimpan: " . mysqli_error($koneksi);
@@ -218,6 +257,7 @@ function formatWaktu($w)
     <title>Undangan Rapat - Sistem Rapat BPS Kota Depok</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="/projek_magang/tinymce/js/tinymce/tinymce.min.js" referrerpolicy="origin"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         /* ===== RESET ===== */
         * {
@@ -429,7 +469,7 @@ function formatWaktu($w)
         .form-container input {
             width: 100%;
             padding: 8px;
-            margin-bottom: 15px;
+            margin-bottom: 5px;
             border: 1px solid #ddd;
             border-radius: 4px;
             box-sizing: border-box;
@@ -438,7 +478,7 @@ function formatWaktu($w)
         .form-container textarea {
             width: 100%;
             padding: 8px;
-            margin-bottom: 15px;
+            margin-bottom: 0px;
             border: 1px solid #ddd;
             border-radius: 4px;
             box-sizing: border-box;
@@ -675,10 +715,13 @@ function formatWaktu($w)
                     <label>Nomor Surat</label>
                     <input name="f_nomor" value="<?= htmlspecialchars($nomor) ?>">
 
-                    <!--PERUBAHAN EMBEDED LINK -->
-                    <a href="https://sites.google.com/view/permintaan-nomor-surat/no-surat-2025"
-                        target="_blank" style="display: inline-block; margin-bottom: 20px; color: #1976d2; 
-                text-decoration: none; font-size: 10pt;"><i class="fas fa-external-link-alt"></i> Buat Nomor Surat</a>
+                    <!-- EMBEDED LINK -->
+                    <a href="https://s.bps.go.id/mansur_depok"
+                        target="_blank" style="text-decoration: none; color: #3b82f6; font-weight: bold; 
+                font-size: 13px; display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; 
+                background: #eff6ff; border-radius: 6px; border: 1px solid #bfdbfe;">
+                        <i class="fas fa-external-link-alt"></i> Link Buat Nomor Surat
+                    </a>
 
                     <label>Sifat</label><input name="f_sifat" value="<?php echo htmlspecialchars($sifat); ?>">
 

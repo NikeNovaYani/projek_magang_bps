@@ -37,41 +37,67 @@ if ($id_notulensi > 0) {
     require_once __DIR__ . '/../koneksi.php';
     $q = mysqli_query($koneksi, "SELECT * FROM notulensi WHERE id_n = '$id_notulensi'");
     if ($row = mysqli_fetch_assoc($q)) {
+        // 1. Separate Images and PDFs
+        $all_dokumentasi = json_decode($row['foto_dokumentasi'] ?? '[]', true) ?? [];
+        $all_absensi     = json_decode($row['foto_absensi'] ?? '[]', true) ?? [];
+
+        $img_dokumentasi = [];
+        $img_absensi     = [];
+        $pdf_attachments = [];
+
+        // Helper to separate
+        foreach ($all_dokumentasi as $f) {
+            $path = (strpos($f, '/') === false) ? 'uploads/dokumentasi/' . $f : $f;
+            if (strtolower(pathinfo($path, PATHINFO_EXTENSION)) === 'pdf') {
+                $pdf_attachments[] = $path;
+            } else {
+                $img_dokumentasi[] = $path;
+            }
+        }
+
+        foreach ($all_absensi as $f) {
+            $path = (strpos($f, '/') === false) ? 'uploads/absensi/' . $f : $f;
+            if (strtolower(pathinfo($path, PATHINFO_EXTENSION)) === 'pdf') {
+                $pdf_attachments[] = $path;
+            } else {
+                $img_absensi[] = $path;
+            }
+        }
+
         // Map DB columns to Template Variables
         $data = [
             'unit_kerja'    => $row['unit_kerja'],
-            'tanggal'       => $_GET['tgl'] ?? $row['tanggal_rapat'], // Template uses $data['tanggal']
-            'tanggal_raw'   => $_GET['tgl'] ?? $row['tanggal_rapat'], // [BARU] Untuk nama folder
+            'tanggal'       => $_GET['tgl'] ?? $row['tanggal_rapat'],
+            'tanggal_raw'   => $_GET['tgl'] ?? $row['tanggal_rapat'],
             'tanggal_fmt'   => formatTanggalIndo($_GET['tgl'] ?? $row['tanggal_rapat']),
             'pimpinan'      => $row['pimpinan_rapat'],
             'pukul_mulai'   => $row['waktu_mulai'],
             'pukul_selesai' => $row['waktu_selesai'],
-            'topik'         => $row['topik'], // [FIXED] Pakai kolom topik, bukan nama_kegiatan
+            'topik'         => $row['topik'],
             'tempat'        => $row['tempat'],
             'lampiran'      => $row['lampiran_ket'],
             'peserta'       => $row['peserta'],
             'agenda'        => $row['agenda'],
-            'pembukaan'     => $row['isi_pembukaan'],
-            'pembahasan'    => $row['isi_pembahasan'],
-            'kesimpulan'    => $row['isi_kesimpulan'],
+            'pembukaan'     => html_entity_decode($row['isi_pembukaan']),
+            'pembahasan'    => html_entity_decode($row['isi_pembahasan']),
+            'kesimpulan'    => html_entity_decode($row['isi_kesimpulan']),
             // TTD
             'p_tempat'      => $row['tempat_pembuatan'],
-            'p_tanggal'     => $row['tanggal_pembuatan'], // Jangan format di sini, template sudah formatTanggalIndo()
+            'p_tanggal'     => $row['tanggal_pembuatan'],
             'p_notulis'     => $row['nama_notulis'],
-            // Foto - prepend directory path karena DB hanya simpan nama file
-            'dokumentasi'   => array_map(function ($f) {
-                return (strpos($f, '/') === false) ? 'uploads/dokumentasi/' . $f : $f;
-            }, json_decode($row['foto_dokumentasi'] ?? '[]', true) ?? []),
-            'absensi'       => array_map(function ($f) {
-                return (strpos($f, '/') === false) ? 'uploads/absensi/' . $f : $f;
-            }, json_decode($row['foto_absensi'] ?? '[]', true) ?? []),
+            // Data Image (No PDF)
+            'dokumentasi'   => $img_dokumentasi,
+            'absensi'       => $img_absensi,
         ];
     } else {
         die("Data Notulensi tidak ditemukan.");
     }
 } else {
     // 2. Fallback ke Session (Preview sebelum simpan)
+    // NOTE: Preview session handling for PDFs might need more complex logic effectively
+    // For now, simpler to just assume session data structure matches or just skip PDF merging for session preview if not complex
     $data = $_SESSION['notulensi'] ?? [];
+    $pdf_attachments = []; // Reset for session mode (complex to handle temp files without DB)
 }
 
 /* ================= MPDF ================= */
@@ -82,11 +108,11 @@ $mpdf = new \Mpdf\Mpdf([
     'margin_left'   => 25,
     'margin_right'  => 25,
     'default_font'  => 'arial',
-    'tempDir'       => __DIR__ . '/../tmp', // Important for image processing
-    'shrink_tables_to_fit' => 0 // [FIX] Disable resizing content to fit page
+    'tempDir'       => __DIR__ . '/../tmp',
+    'shrink_tables_to_fit' => 0
 ]);
 
-$mpdf->showImageErrors = true; // Debug images
+$mpdf->showImageErrors = true;
 
 /* ================= LOAD TEMPLATE ================= */
 try {
@@ -95,7 +121,6 @@ try {
     $html = ob_get_clean();
 
     // [FIX] Konversi CSS list-style ke Atribut HTML type secara Robust (Regex)
-    // Menangani variasi spasi atau kutip dari TinyMCE
     $html = preg_replace('/(<ol[^>]*?)style="[^"]*list-style-type:\s*lower-alpha;?[^"]*"([^>]*>)/i', '$1 type="a" $2', $html);
     $html = preg_replace('/(<ol[^>]*?)style="[^"]*list-style-type:\s*upper-alpha;?[^"]*"([^>]*>)/i', '$1 type="A" $2', $html);
     $html = preg_replace('/(<ol[^>]*?)style="[^"]*list-style-type:\s*lower-roman;?[^"]*"([^>]*>)/i', '$1 type="i" $2', $html);
@@ -103,6 +128,65 @@ try {
 
     /* ================= RENDER PDF ================= */
     $mpdf->WriteHTML($html);
+
+    /* ================= APPEND PDF ATTACHMENTS ================= */
+    if (!empty($pdf_attachments)) {
+        file_put_contents(__DIR__ . '/../tmp/pdf_debug.log', "Found PDFs: " . print_r($pdf_attachments, true) . "\n", FILE_APPEND);
+
+        foreach ($pdf_attachments as $pdfFile) {
+            $pdfPath = __DIR__ . '/../' . $pdfFile;
+
+            // Debug path
+            file_put_contents(__DIR__ . '/../tmp/pdf_debug.log', "Checking: $pdfPath\n", FILE_APPEND);
+
+            if (file_exists($pdfPath)) {
+                try {
+                    $pageCount = $mpdf->SetSourceFile($pdfPath);
+                    file_put_contents(__DIR__ . '/../tmp/pdf_debug.log', "Merging $pdfFile ($pageCount pages)\n", FILE_APPEND);
+
+                    for ($i = 1; $i <= $pageCount; $i++) {
+                        $mpdf->AddPage();
+                        $tplId = $mpdf->ImportPage($i);
+                        $mpdf->UseTemplate($tplId, ['adjustPageSize' => true]);
+                    }
+                } catch (\Throwable $e) {
+                    // FALLBACK: TRY GHOSTSCRIPT CONVERSION (Use QGIS's GS if available)
+                    $gsPath = 'C:\\Program Files\\QGIS 3.40.7\\bin\\gswin64c.exe';
+                    $tempPdf = __DIR__ . '/../tmp/temp_gs_' . uniqid() . '.pdf';
+
+                    if (file_exists($gsPath)) {
+                        file_put_contents(__DIR__ . '/../tmp/pdf_debug.log', "Trying Ghostscript fallback for $pdfFile...\n", FILE_APPEND);
+
+                        // GS Command: optimize to version 1.4 which FPDI supports
+                        $cmd = sprintf('"%s" -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dNOPAUSE -dQUIET -dBATCH -sOutputFile="%s" "%s"', $gsPath, $tempPdf, $pdfPath);
+                        exec($cmd, $output, $returnVar);
+
+                        if ($returnVar === 0 && file_exists($tempPdf)) {
+                            try {
+                                $pageCount = $mpdf->SetSourceFile($tempPdf);
+                                file_put_contents(__DIR__ . '/../tmp/pdf_debug.log', "GS Fallback success. Merging ($pageCount pages)\n", FILE_APPEND);
+                                for ($i = 1; $i <= $pageCount; $i++) {
+                                    $mpdf->AddPage();
+                                    $tplId = $mpdf->ImportPage($i);
+                                    $mpdf->UseTemplate($tplId, ['adjustPageSize' => true]);
+                                }
+                            } catch (\Throwable $e2) {
+                                file_put_contents(__DIR__ . '/../tmp/pdf_merge_error.log', "GS Fallback failed for $pdfFile: " . $e2->getMessage() . "\n", FILE_APPEND);
+                            }
+                            // Cleanup temp file
+                            unlink($tempPdf);
+                        } else {
+                            file_put_contents(__DIR__ . '/../tmp/pdf_merge_error.log', "Ghostscript execution failed for $pdfFile. Return: $returnVar\n", FILE_APPEND);
+                        }
+                    } else {
+                        file_put_contents(__DIR__ . '/../tmp/pdf_merge_error.log', "Failed to merge $pdfFile (FPDI error) and GS not found at $gsPath: " . $e->getMessage() . "\n", FILE_APPEND);
+                    }
+                }
+            } else {
+                file_put_contents(__DIR__ . '/../tmp/pdf_debug.log', "File Not Found: $pdfPath\n", FILE_APPEND);
+            }
+        }
+    }
 
     // 1. Generate Binary Data (String)
     $pdfContent = $mpdf->Output('', 'S');
