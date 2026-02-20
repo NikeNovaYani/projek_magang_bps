@@ -1,44 +1,30 @@
 <?php
-// 1. Cek Session agar tidak error
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
-
-// 2. [PENTING] Reset variabel agar tidak "bocor" dari halaman lain
-// Kita set nilai default Agenda di sini.
 $agenda = "Pembahasan Optimalisasi Anggaran";
-
-/* ================= LOAD FROM ARCHIVE ================= */
-// ... kode selanjutnya ...
-/* ================= LOAD FROM ARCHIVE ================= */
 if (isset($_GET['load'])) {
     $folder = preg_replace('/[^A-Za-z0-9\-_]/', '_', $_GET['load']);
     $jsonPath = 'arsip/' . $folder . '/undangan.json';
 
-    // Extract Nama Kegiatan from Folder Name (Fallback)
     $parts = explode('_', $folder, 2);
     $nama_kegiatan = isset($parts[1]) ? str_replace('_', ' ', $parts[1]) : '';
 
     if (file_exists($jsonPath)) {
         $loaded = json_decode(file_get_contents($jsonPath), true);
         if ($loaded) {
-            if ($loaded) {
-                // If JSON has specific name, override (optional, currently JSON might not have it)
-                if (!empty($loaded['nama_kegiatan'])) {
-                    $nama_kegiatan = $loaded['nama_kegiatan'];
-                }
+            if (!empty($loaded['nama_kegiatan'])) {
+                $nama_kegiatan = $loaded['nama_kegiatan'];
+            } else {
                 $nomor    = $loaded['nomor'] ?? null;
                 $sifat    = $loaded['sifat'] ?? null;
                 $lampiran = $loaded['lampiran'] ?? null;
                 $hal      = $loaded['hal'] ?? null;
-                $tglsurat = $loaded['tanggal'] ?? null; // 'tanggal' in JSON maps to 'tglsurat' var
+                $tglsurat = $loaded['tanggal'] ?? null;
                 $kepada   = $loaded['kepada'] ?? null;
-                // Note: 'isi' might not be saved in current save_undangan.php logic, check later if needed.
                 $hari     = $loaded['hari_tanggal'] ?? null;
                 $waktu    = $loaded['pukul_mulai'] ?? null;
                 $tempat   = $loaded['tempat'] ?? null;
-                // Kita hanya timpa variabel $agenda JIKA di dalam JSON benar-benar ada isinya.
-                // Ini mencegah variabel menjadi null/kosong jika JSON-nya tidak lengkap.
                 if (!empty($loaded['agenda'])) {
                     $agenda = $loaded['agenda'];
                 }
@@ -49,16 +35,15 @@ if (isset($_GET['load'])) {
 
 /* ================= DATABASE CONNECTION ================= */
 require_once __DIR__ . '/../koneksi.php';
-
-// Ambil data pejabat (ambil 1 saja)
 $query_pejabat = mysqli_query($koneksi, "SELECT * FROM pejabat LIMIT 1");
 $pejabat = mysqli_fetch_assoc($query_pejabat);
 
-// ========== EDIT MODE: LOAD DATA FROM DB ==========
+// ========== NAMA TANDA TANGAN ==========
+$nama_pimpinan = "Agus Marzuki Prihantoro";
+
+// ========== EDIT MODE: LOAD DATA DARI DATABASE ==========
 $id_undangan_edit = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $is_edit_mode = false;
-
-// Pre-fill nama_kegiatan from URL parameter (dari arsip manual "Buat" button)
 if (isset($_GET['nama']) && !empty($_GET['nama'])) {
     $nama_kegiatan = $_GET['nama'];
 }
@@ -67,7 +52,6 @@ if ($id_undangan_edit > 0) {
     $q_edit = mysqli_query($koneksi, "SELECT * FROM undangan WHERE id_u = '$id_undangan_edit'");
     if ($row_edit = mysqli_fetch_assoc($q_edit)) {
         $is_edit_mode = true;
-        // Override variables with DB data
         $nama_kegiatan = $row_edit['nama_kegiatan'];
         $nomor         = $row_edit['nomor_surat'];
         $sifat         = $row_edit['sifat'];
@@ -75,31 +59,23 @@ if ($id_undangan_edit > 0) {
         $hal           = $row_edit['perihal'];
         $tglsurat      = $row_edit['tanggal_surat'];
         $kepada        = $row_edit['kepada'];
-        $isi        = $row_edit['isi_undangan']; // [BARU] Ambil isi dari DB
-
+        $isi        = $row_edit['isi_undangan'];
         $hari     = $row_edit['hari_tanggal_acara'];
-
-        // Parse Waktu (09:00 s.d 12:00 WIB)
         $waktu_raw = str_replace(' WIB', '', $row_edit['waktu_acara']);
         $waktu_parts = explode(' s.d ', $waktu_raw);
         $waktu_mulai_db = $waktu_parts[0] ?? '';
         $waktu_selesai_db = $waktu_parts[1] ?? '';
-
-        // Note: Form Undangan pakai 1 field 'waktu', tapi save_undangan pakai mulai/selesai?
-        // Cek form: <input type="time" name="f_waktu"> -> Hanya satu (Jam Mulai).
         $waktu    = $waktu_mulai_db;
-
         $tempat   = $row_edit['tempat_acara'];
         $agenda   = $row_edit['agenda'];
     }
 }
 
-/* ================= SAVE TO DATABASE ================= */
+/* ================= SAVE KE DATABASE ================= */
 $msg_success = '';
 $msg_error = '';
 
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['f_nomor'])) { // Simple check to see if form is submitted
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['f_nomor'])) {
     $id_u          = isset($_POST['id_u']) ? (int)$_POST['id_u'] : 0;
     $nama_kegiatan = mysqli_real_escape_string($koneksi, $_POST['f_nama_kegiatan'] ?? '');
     $nomor_surat   = mysqli_real_escape_string($koneksi, $_POST['f_nomor'] ?? '');
@@ -116,7 +92,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['f_nomor'])) { // Simp
     $id_pejabat    = isset($pejabat['id']) ? $pejabat['id'] : 'NULL';
 
     if ($id_u > 0) {
-        // === UPDATE ===
         $query = "UPDATE undangan SET 
                   nama_kegiatan = '$nama_kegiatan',
                   nomor_surat = '$nomor_surat',
@@ -134,7 +109,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['f_nomor'])) { // Simp
 
         if (mysqli_query($koneksi, $query)) {
             $msg_success = "Perubahan berhasil disimpan!";
-            // Refresh to ensure variables are updated
             echo "<!DOCTYPE html><body>";
             echo "<script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>";
             echo "<script>
@@ -155,9 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['f_nomor'])) { // Simp
             $msg_error = "Gagal memperbarui: " . mysqli_error($koneksi);
         }
     } else {
-        // === INSERT ===
 
-        // Cek Duplikat Nama Kegiatan
         $check_duplicate = mysqli_query($koneksi, "SELECT id_u FROM undangan WHERE nama_kegiatan = '$nama_kegiatan'");
         if (mysqli_num_rows($check_duplicate) > 0) {
             echo "<!DOCTYPE html><body>";
@@ -183,7 +155,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['f_nomor'])) { // Simp
         if (mysqli_query($koneksi, $sql_insert)) {
             $msg_success = "Data undangan berhasil disimpan ke arsip!";
             $new_id = mysqli_insert_id($koneksi);
-            // Redirect to Edit Mode
             echo "<!DOCTYPE html><body>";
             echo "<script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>";
             echo "<script>
@@ -206,7 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['f_nomor'])) { // Simp
     }
 }
 
-/* ================= DATA DEFAULT ================= */
+/* ================= DATA DEFAULT DI FORM INPUT ================= */
 $nomor    = $_POST['f_nomor']    ?? ($nomor ?? 'B-32766/32766/BPS/2024');
 $sifat    = $_POST['f_sifat']    ?? ($sifat ?? 'Biasa');
 $lampiran = $_POST['f_lampiran'] ?? ($lampiran ?? '-');
@@ -218,11 +189,8 @@ $hari     = $_POST['f_hari']     ?? ($hari ?? 'Y-m-d');
 $waktu    = $_POST['f_waktu']    ?? ($waktu ?? '13:30');
 $tempat   = $_POST['f_tempat']   ?? ($tempat ?? 'Ruang Rapat BPS Kota Depok');
 $tempat   = $_POST['f_tempat']   ?? ($tempat ?? 'Ruang Rapat BPS Kota Depok');
-// Kita gunakan variabel $agenda yang sudah kita atur di atas (entah itu default, dari JSON, atau dari DB).
-// Jika ada POST (saat tombol simpan ditekan), pakai data POST.
-$agenda = $_POST['f_agenda'] ?? $agenda; // Default explicit value
+$agenda = $_POST['f_agenda'] ?? $agenda;
 
-/* ================= FUNGSI FORMATTING ================= */
 function formatTanggal($date)
 {
     $bulan = ['01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'];
@@ -254,12 +222,11 @@ function formatWaktu($w)
 
 <head>
     <meta charset="UTF-8">
-    <title>Undangan Rapat - Sistem Rapat BPS Kota Depok</title>
+    <title>Undangan Rapat - SI UANG</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="/projek_magang/tinymce/js/tinymce/tinymce.min.js" referrerpolicy="origin"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        /* ===== RESET ===== */
         * {
             box-sizing: border-box;
             font-family: "Arial", serif;
@@ -271,149 +238,45 @@ function formatWaktu($w)
             color: #0d47a1;
         }
 
-        /* ===== CONTAINER ===== */
         .container {
             display: flex;
             min-height: 100vh;
         }
 
-        .sidebar {
-            /* kotak navigasi */
-            width: 250px;
-            height: 100vh;
-            background-color: #ffffff;
-            box-shadow: 5px 0 15px rgba(27, 110, 235, 0.1);
-            padding: 20px 0;
-            position: fixed;
-            left: 0;
-            top: 0;
-            z-index: 1000;
-            transition: all 0.3s ease;
-        }
 
-        .sidebar h2 {
-            /*judul navigasi */
-            text-align: center;
-            color: #1976d2;
-            margin-bottom: 30px;
-            font-size: 28px;
-            font-weight: 700;
-            position: relative;
-        }
-
-        .sidebar h2:after {
-            content: '';
-            position: absolute;
-            bottom: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60px;
-            height: 3px;
-            background: #1976d2;
-            border-radius: 3px;
-        }
-
-        .sidebar ul {
-            /* kotak isi */
-            list-style: none;
-            padding: 0;
-            /* kotak teks */
-            margin: 0;
-        }
-
-        .sidebar li {
-            /* jarak per item */
-            margin: 5px 0;
-        }
-
-        .sidebar a {
-            /* teks sama choice */
-            display: flex;
-            align-items: center;
-            padding: 15px 25px;
-            color: #1e70ebff;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            font-size: 16px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .sidebar a i {
-            margin-right: 15px;
-            width: 20px;
-            text-align: center;
-        }
-
-        .sidebar a:hover,
-        .sidebar a.active {
-            background-color: #e3f2fd;
-            color: #0d47a1;
-            transform: translateX(5px);
-        }
-
-        .sidebar a.active {
-            border-left: 4px solid #1976d2;
-            font-weight: 600;
-        }
 
         .main-content {
             flex: 1;
             padding: 30px;
             overflow-y: auto;
-            margin-left: 150px;
+            margin-left: 130px;
             display: grid;
             grid-template-columns: 1fr 2fr;
             gap: 30px;
             align-items: start;
         }
 
-        /* ===== RESPONSIVE ===== */
-        /* Updated to 1366px to stack on Laptops */
         @media (max-width: 1366px) {
-
-            /* 1. Reset Container Internal */
             .main-content .container {
                 display: block !important;
                 width: 100% !important;
                 padding: 0 !important;
             }
 
-            /* 2. Sembunyikan Sidebar Internal (karena sudah ada di index.php) */
-            .main-content .sidebar {
-                display: none !important;
-            }
-
-            /* 3. Atur Konten Utama Internal */
-            .main-content .main-content {
-                margin-left: 160px !important;
-                width: 100% !important;
-                display: flex !important;
-                flex-direction: column !important;
-                /* Tumpuk atas bawah */
-                gap: 20px !important;
-                padding: 10px !important;
-            }
-
-            /* 4. Form Container Penuh */
             .form-container {
                 width: 500px !important;
                 max-width: 100% !important;
                 margin-bottom: 10px;
             }
 
-            /* 5. Sheet Preview Responsif */
             .sheet {
                 width: 210mm !important;
-                /* Keep A4 Width */
                 max-width: 100% !important;
                 order: 2;
                 position: static !important;
                 margin-left: 0px !important;
-                /* Center it */
             }
 
-            /* Penyesuaian font size di mobile jika perlu */
             .main-content .sheet .kop-text .instansi-name {
                 font-size: 14pt !important;
             }
@@ -446,10 +309,8 @@ function formatWaktu($w)
             }
         }
 
-        /* Form Styling */
         .form-container {
             width: 500px;
-            /* Lebar form diperkecil sedikit */
             background: white;
             padding: 20px;
             border-radius: 8px;
@@ -483,11 +344,8 @@ function formatWaktu($w)
             border-radius: 4px;
             box-sizing: border-box;
             height: 90px;
-            /* Lebih tinggi dari input */
             resize: none;
-            /* Tidak bisa di-resize (statis) */
             overflow-y: auto;
-            /* Scrollable */
         }
 
         .actions {
@@ -523,10 +381,8 @@ function formatWaktu($w)
             color: white;
         }
 
-        /* Sheet Preview Styling */
         .sheet {
             width: 210mm;
-            /* A4 Width */
             background: white;
             padding: 20mm;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
@@ -580,12 +436,10 @@ function formatWaktu($w)
             height: auto;
         }
 
-        /* Style Khusus Kop Surat BPS */
         .kop-preview {
             display: flex;
             align-items: center;
             border-bottom: 3px solid #000;
-            /* Garis tebal bawah */
             padding-bottom: 5px;
             margin-bottom: 10px;
             font-family: Arial, sans-serif;
@@ -607,7 +461,6 @@ function formatWaktu($w)
             font-size: 16pt;
             font-weight: bold;
             font-style: italic;
-            /* Tulisan Miring */
             letter-spacing: 0.5px;
         }
 
@@ -615,7 +468,6 @@ function formatWaktu($w)
             font-size: 14pt;
             font-weight: bold;
             font-style: italic;
-            /* Tulisan Miring */
             margin-top: 2px;
             margin-bottom: 8px;
         }
@@ -624,7 +476,6 @@ function formatWaktu($w)
             font-size: 8pt;
             font-weight: normal;
             font-style: normal;
-            /* Tulisan Tegak */
             line-height: 1.4;
         }
 
@@ -666,7 +517,6 @@ function formatWaktu($w)
             }
         }
 
-        /* TinyMCE Fix */
         .tox-promotion {
             display: none !important;
         }
@@ -676,23 +526,13 @@ function formatWaktu($w)
 <body>
 
     <div class="container">
-        <div class="sidebar">
-            <h2>SI UANG</h2>
-            <ul>
-                <li><a href="index.php?page=beranda"><i class="fas fa-home"></i> Beranda</a></li>
-                <li><a href="index.php?page=undangan" class="active"><i class="fas fa-envelope"></i> Undangan</a></li>
-                <li><a href="index.php?page=notulensi"><i class="fas fa-file-alt"></i> Notulensi</a></li>
-                <li><a href="index.php?page=absensi"><i class="fas fa-user-check"></i> Absensi</a></li>
-                <li><a href="index.php?page=arsip"><i class="fas fa-archive"></i> Arsip</a></li>
-                <li style="position: absolute; bottom: 0px; right: 0px; left: 0px;"><a href="index.php?page=logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-            </ul>
-        </div>
+
 
         <div class="main-content">
-            <!-- FORM INPUT -->
+            <!-- TAMPILAN FORM BUAT UNDANGAN KIRI-->
             <div class="form-container">
                 <form id="formUndangan" method="post">
-                    <input type="hidden" name="id_u" value="<?= $id_undangan_edit ?>"> <!-- ID untuk Edit Mode -->
+                    <input type="hidden" name="id_u" value="<?= $id_undangan_edit ?>">
                     <div class="card-head">
                         <h3><?= $is_edit_mode ? 'Edit Undangan' : 'Buat Undangan' ?></h3>
                     </div>
@@ -715,7 +555,7 @@ function formatWaktu($w)
                     <label>Nomor Surat</label>
                     <input name="f_nomor" value="<?= htmlspecialchars($nomor) ?>">
 
-                    <!-- EMBEDED LINK -->
+                    <!-- EMBEDED LINK KEHALAMAN SI MANSUR -->
                     <a href="https://s.bps.go.id/mansur_depok"
                         target="_blank" style="text-decoration: none; color: #3b82f6; font-weight: bold; 
                 font-size: 13px; display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; 
@@ -749,13 +589,14 @@ function formatWaktu($w)
                 </form>
             </div>
 
-            <!-- PREVIEW SURAT -->
+            <!-- TAMPILAN PREVIEW SURAT UNDANGAN KANAN-->
             <div class="sheet">
                 <div class="kop-preview">
+                    <!-- GAMBAR LOGO BPS -->
                     <div class="kop-logo">
                         <img src="pdf/logo.png" alt="Logo BPS">
                     </div>
-
+                    <!-- KOP SURAT UNDANGAN -->
                     <div class="kop-text">
                         <div class="instansi-name">BADAN PUSAT STATISTIK</div>
                         <div class="wilayah-name">KOTA DEPOK</div>
@@ -823,10 +664,9 @@ function formatWaktu($w)
                     </div>
 
                     <?php
-                    // [BARU] Pastikan diakhiri dengan titik dua ( : ) sesuai request
                     $isi_preview = trim($isi);
                     if (substr($isi_preview, -1) === '.') {
-                        $isi_preview = substr($isi_preview, 0, -1); // Hapus titik di akhir jika ada
+                        $isi_preview = substr($isi_preview, 0, -1);
                     }
                     if (substr($isi_preview, -1) !== ':') {
                         $isi_preview .= ' :';
@@ -859,6 +699,7 @@ function formatWaktu($w)
                         </tr>
                     </table>
 
+                    <!-- PARAGRAF PENUTUP UNDANGAN -->
                     <p style="text-indent: 50px; text-align: justify; margin-top: 20px;">
                         Demikian undangan ini disampaikan, atas kehadiran dan perhatiannya diucapkan terima kasih.
                     </p>
@@ -874,6 +715,7 @@ function formatWaktu($w)
                                     <?php endif; ?>
                                 </div>
 
+                                <!-- TANDA TANGAN -->
                                 <div style="position: relative; z-index: 2;">
                                     <p style="margin: 0; padding: 0;">Kepala Badan Pusat Statistik</p>
                                     <p style="margin: 0; padding: 0;">Kota Depok,</p>
@@ -882,7 +724,7 @@ function formatWaktu($w)
                                 <div style="height: 75px;"></div>
 
                                 <div style="position: relative; z-index: 2;">
-                                    <p style="margin: 0; padding: 0;"><strong><?= htmlspecialchars($pejabat['nama_kepala'] ?? 'Agus Marzuki Prihantoro') ?></strong></p>
+                                    <p style="margin: 0; padding: 0;"><strong><?= htmlspecialchars($nama_pimpinan ?? $pejabat['nama_kepala']) ?></strong></p>
                                 </div>
 
                             </td>
@@ -903,21 +745,18 @@ function formatWaktu($w)
         const form = document.getElementById('formUndangan');
 
         function saveNotulensi() {
-            // Validasi Field Nama Kegiatan
             const namaKegiatan = form.querySelector('[name="f_nama_kegiatan"]').value.trim();
             if (!namaKegiatan) {
-                // Tampilkan notifikasi di atas form
                 let notif = document.querySelector('.custom-alert');
                 if (!notif) {
                     notif = document.createElement('div');
                     notif.className = 'custom-alert';
                     notif.style.cssText = 'background: #fff3cd; color: #856404; padding: 10px; border-radius: 4px; margin-bottom: 15px; border: 1px solid #ffeeba;';
                     const container = document.querySelector('.form-container form');
-                    container.insertBefore(notif, container.children[2]); // Insert after h3 or messages
+                    container.insertBefore(notif, container.children[2]);
                 }
                 notif.innerHTML = '<strong>PERINGATAN:</strong> Harap isi "Nama Kegiatan Rapat" terlebih dahulu.';
 
-                // Scroll ke atas
                 document.querySelector('.form-container').scrollIntoView({
                     behavior: 'smooth'
                 });
@@ -925,14 +764,13 @@ function formatWaktu($w)
             }
 
             form.target = '_self';
-            form.action = ''; // Kembali ke halaman ini sendiri
+            form.action = '';
             form.submit();
         }
 
         function cetakPDF(btn) {
-            const form = document.getElementById('formUndangan'); // Pastikan selektor form benar
+            const form = document.getElementById('formUndangan');
 
-            // Validasi Field Nama Kegiatan
             const namaKegiatan = form.querySelector('[name="f_nama_kegiatan"]').value.trim();
             if (!namaKegiatan) {
                 alert('PERINGATAN: Harap isi "Nama Kegiatan Rapat" terlebih dahulu.');
@@ -941,52 +779,39 @@ function formatWaktu($w)
 
             const data = new FormData(form);
 
-            // Ubah tombol jadi Loading
-            // const btn = document.querySelector('.btn-print'); // HAPUS INI
             const originalText = btn.innerText;
             btn.innerText = 'Menyimpan & Mengunduh...';
             btn.disabled = true;
 
-            // TinyMCE Trigger Save if needed
             if (typeof tinymce !== 'undefined') {
                 tinymce.triggerSave();
             }
 
-            // 1. Kirim data ke save_undangan.php
-            fetch('pages/save_undangan.php', { // Hapus ?action=archive jika tidak perlu logika khusus
+            fetch('pages/save_undangan.php', {
                     method: 'POST',
                     body: data
                 })
                 .then(response => response.text())
                 .then(result => {
-                    // result sekarang berisi ID Undangan (misal: "15")
                     let idUndangan = result.trim();
 
-                    // Cek apakah result benar-benar angka (ID Valid)
                     if (!isNaN(idUndangan) && idUndangan > 0) {
 
-                        // 2. Sukses Simpan -> Trigger Download via Iframe menggunakan ID
                         const iframe = document.createElement('iframe');
                         iframe.style.display = 'none';
 
-                        // PERUBAHAN UTAMA DI SINI:
-                        // Kita kirim parameter ?id=... bukan archive_folder
                         iframe.src = 'pdf/generate_undangan.php?download=true&id=' + idUndangan;
 
                         document.body.appendChild(iframe);
 
-                        // Notifikasi Sukses
                         setTimeout(() => {
-                            // alert('Undangan berhasil disimpan dan PDF sedang diunduh.');
                             btn.innerText = originalText;
                             btn.disabled = false;
 
-                            // Opsional: Redirect ke halaman list undangan setelah cetak
-                            // window.location.href = 'index.php?page=undangan'; 
+                            window.location.href = 'index.php?page=undangan';
                         }, 2000);
 
                     } else {
-                        // Jika return bukan angka (berarti error PHP)
                         alert('Gagal menyimpan data. Error: ' + result);
                         console.log(result);
                         btn.innerText = originalText;

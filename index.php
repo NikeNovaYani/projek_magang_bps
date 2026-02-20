@@ -1,32 +1,21 @@
 <?php
 session_start();
-
-// Jika session status_login tidak ada atau tidak true, tendang balik ke login.php
 if (!isset($_SESSION['status_login']) || $_SESSION['status_login'] !== true) {
     header("Location: login.php");
     exit();
 }
 
-// ===============================
-// EARLY EXIT FOR PDF (WAJIB)
-// ===============================
-// Ini menangani permintaan cetak PDF agar tidak tercampur dengan HTML
 if (isset($_GET['page'])) {
     if ($_GET['page'] === 'generate_notulensi') {
-        require __DIR__ . '/pdf/generate_notulensi.php'; // Pastikan path ini benar
+        require __DIR__ . '/pdf/generate_notulensi.php';
         exit;
     }
-    // Tambahan untuk Undangan (jika nanti dipanggil via router)
     if ($_GET['page'] === 'generate_undangan') {
-        // Asumsi file ini ada di folder pdf atau root. Sesuaikan jika perlu.
         require __DIR__ . '/generate_undangan.php';
         exit;
     }
 }
 
-// ===============================
-// ROUTING NORMAL
-// ===============================
 $page = $_GET['page'] ?? 'beranda';
 
 $allowed_pages = [
@@ -50,9 +39,6 @@ if ($page === 'logout') {
     exit;
 }
 
-// ===============================
-// PAGE TITLE
-// ===============================
 $page_titles = [
     'beranda'       => 'Beranda',
     'undangan'      => 'Undangan Rapat',
@@ -74,7 +60,6 @@ $page_title = $page_titles[$page] ?? 'UANG BPS Kota Depok';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* ===== GLOBAL LAYOUT STYLES ===== */
         * {
             box-sizing: border-box;
             font-family: "Arial", serif;
@@ -91,7 +76,6 @@ $page_title = $page_titles[$page] ?? 'UANG BPS Kota Depok';
             min-height: 100vh;
         }
 
-        /* ===== SIDEBAR ===== */
         .logout-item {
             position: absolute;
             bottom: 20px;
@@ -167,38 +151,30 @@ $page_title = $page_titles[$page] ?? 'UANG BPS Kota Depok';
             transform: translateX(5px);
         }
 
-        /* ===== MAIN CONTENT ===== */
         .main-content {
             flex: 1;
             padding: 30px;
             overflow-y: auto;
             margin-left: 280px;
-            /* Width of sidebar */
-            /* Ensure content fits */
             width: calc(100% - 280px);
         }
 
-        /* ===== PERBAIKAN RESPONSIVE ===== */
         @media (max-width: 768px) {
 
-            /* 1. Perbaikan Sidebar */
             .sidebar {
                 position: fixed !important;
                 left: -280px !important;
-                /* Sembunyikan sepenuhnya ke kiri */
                 top: 0;
                 width: 280px !important;
                 height: 100vh !important;
                 z-index: 9999 !important;
                 transition: 0.3s all ease;
-                /* Perbaikan penulisan transition */
                 box-shadow: 10px 0 20px rgba(0, 0, 0, 0.2) !important;
                 display: block !important;
             }
 
             .sidebar.active {
                 left: 0 !important;
-                /* Muncul saat tombol diklik */
             }
 
             .sidebar .logout-item {
@@ -207,7 +183,6 @@ $page_title = $page_titles[$page] ?? 'UANG BPS Kota Depok';
                 margin-top: 20px;
             }
 
-            /* 2. Perbaikan Konten Utama */
             .main-content,
             main,
             .content {
@@ -215,11 +190,8 @@ $page_title = $page_titles[$page] ?? 'UANG BPS Kota Depok';
                 width: 100% !important;
                 padding: 80px 15px 20px 15px !important;
                 display: block !important;
-                /* Pastikan tidak flex kesamping */
             }
 
-            /* 3. Membuat Card Menjadi 1 Kolom (PENTING) */
-            /* Ganti .card-container dengan class pembungkus card di kodemu */
             .card-container,
             .row,
             .grid-layout {
@@ -231,12 +203,10 @@ $page_title = $page_titles[$page] ?? 'UANG BPS Kota Depok';
 
             .card {
                 width: 100% !important;
-                /* Card memenuhi lebar layar HP */
                 margin-left: 0 !important;
                 margin-right: 0 !important;
             }
 
-            /* 4. Tombol Hamburger */
             .hamburger-btn {
                 display: block !important;
                 position: fixed;
@@ -262,6 +232,7 @@ $page_title = $page_titles[$page] ?? 'UANG BPS Kota Depok';
         <button class="hamburger-btn" onclick="toggleSidebar()" style="display: none;">
             <i class="fas fa-bars"></i>
         </button>
+        <!-- MENU SIDEBAR KIRI -->
         <div class="sidebar">
             <h2>SI UANG</h2>
             <ul>
@@ -276,12 +247,8 @@ $page_title = $page_titles[$page] ?? 'UANG BPS Kota Depok';
 
         <div class="main-content">
             <?php
-            // ===============================
-            // LOADER HALAMAN (Perbaikan Path)
-            // ===============================
             switch ($page) {
                 case 'undangan':
-                    // PERBAIKAN: Menambahkan folder '/pages/'
                     include __DIR__ . '/pages/undangan.php';
                     break;
 
@@ -290,13 +257,11 @@ $page_title = $page_titles[$page] ?? 'UANG BPS Kota Depok';
                     break;
 
                 case 'absensi':
-                    // Saya asumsikan ini juga di folder pages
                     include __DIR__ . '/pages/absensi.php';
                     break;
 
 
                 case 'arsip':
-                    // Saya asumsikan ini juga di folder pages
                     include __DIR__ . '/pages/arsip.php';
                     break;
 
@@ -305,7 +270,6 @@ $page_title = $page_titles[$page] ?? 'UANG BPS Kota Depok';
                     include __DIR__ . '/pages/logout.php';
                     break;
                 default:
-                    // Beranda biasanya juga di folder pages? Sesuaikan jika di root.
                     if (file_exists(__DIR__ . '/pages/beranda.php')) {
                         include __DIR__ . '/pages/beranda.php';
                     } else {
@@ -321,7 +285,6 @@ $page_title = $page_titles[$page] ?? 'UANG BPS Kota Depok';
             const sidebar = document.querySelector('.sidebar');
             sidebar.classList.toggle('active');
 
-            // Opsional: Ganti ikon bars jadi 'times' (X) saat terbuka
             const btnIcon = document.querySelector('.hamburger-btn i');
             if (sidebar.classList.contains('active')) {
                 btnIcon.classList.replace('fa-bars', 'fa-times');
@@ -330,7 +293,6 @@ $page_title = $page_titles[$page] ?? 'UANG BPS Kota Depok';
             }
         }
 
-        // Tutup sidebar otomatis jika user mengklik area konten utama
         document.addEventListener('click', function(event) {
             const sidebar = document.querySelector('.sidebar');
             const btn = document.querySelector('.hamburger-btn');

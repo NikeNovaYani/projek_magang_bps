@@ -1,11 +1,9 @@
 <?php
-// Mencegah akses langsung ke file ini
 if (basename($_SERVER['PHP_SELF']) === basename(__FILE__)) {
     header("Location: ../index.php?page=notulensi");
     exit();
 }
 
-// ========== UTIL ==========
 require_once __DIR__ . '/../koneksi.php';
 
 $bulan_indonesia = [
@@ -30,23 +28,20 @@ function formatTanggalIndo($date)
     return date('d', $ts) . ' ' . $bulan_indonesia[date('F', $ts)] . ' ' . date('Y', $ts);
 }
 
-// ========== AMBIL ID UNDANGAN ==========
 $id_undangan = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-// ========== LOAD FROM ARCHIVE ==========
 $is_loaded_from_archive = false;
 if (isset($_GET['load'])) {
     $folder = preg_replace('/[^A-Za-z0-9\-_]/', '_', $_GET['load']);
     $jsonPath = 'arsip/' . $folder . '/notulensi.json';
 
     if (file_exists($jsonPath)) {
-        // Extract Nama Kegiatan from Folder Name
         $parts = explode('_', $folder, 2);
         $nama_kegiatan_default = isset($parts[1]) ? str_replace('_', ' ', $parts[1]) : '';
 
         $loaded = json_decode(file_get_contents($jsonPath), true);
         if ($loaded) {
-            $nama_kegiatan = $loaded['nama_kegiatan'] ?? $nama_kegiatan_default; // Use JSON if available, else folder name
+            $nama_kegiatan = $loaded['nama_kegiatan'] ?? $nama_kegiatan_default;
             $unit_kerja    = $loaded['unit_kerja'] ?? $unit_kerja;
             $tanggal_raw   = $loaded['tanggal'] ?? $tanggal_raw;
             $pimpinan      = $loaded['pimpinan'] ?? $pimpinan;
@@ -61,7 +56,6 @@ if (isset($_GET['load'])) {
             $pembahasan    = $loaded['pembahasan'] ?? $pembahasan;
             $pembahasan    = $loaded['pembahasan'] ?? $pembahasan;
             $kesimpulan    = $loaded['kesimpulan'] ?? $kesimpulan;
-            // Load Images Arrays
             $dokumentasi_files = $loaded['dokumentasi'] ?? [];
             $absensi_files     = $loaded['absensi'] ?? [];
             $is_loaded_from_archive = true;
@@ -69,15 +63,12 @@ if (isset($_GET['load'])) {
     }
 }
 
-// ========== LOAD FROM DB (Start Fresh from Invitation OR Edit Existing) ==========
 $is_edit_mode_notulensi = false;
 
 if ($id_undangan > 0 && !$is_loaded_from_archive && !isset($_POST['unit_kerja'])) {
-    // 1. Cek apakah sudah ada Notulensi untuk ID ini? (EDIT MODE)
     $q_cek_not = mysqli_query($koneksi, "SELECT * FROM notulensi WHERE id_n = '$id_undangan'");
 
     if ($d_not = mysqli_fetch_assoc($q_cek_not)) {
-        // === EDIT MODE ===
         $is_edit_mode_notulensi = true;
 
         $unit_kerja    = $d_not['unit_kerja'];
@@ -86,9 +77,8 @@ if ($id_undangan > 0 && !$is_loaded_from_archive && !isset($_POST['unit_kerja'])
         $pukul_mulai   = $d_not['waktu_mulai'];
         $pukul_selesai = $d_not['waktu_selesai'];
 
-        // FIX: Correct Mapping
-        $nama_kegiatan = $d_not['nama_kegiatan']; // Map column nama_kegiatan to variable
-        $topik         = $d_not['topik'];         // Map column topik to variable
+        $nama_kegiatan = $d_not['nama_kegiatan'];
+        $topik         = $d_not['topik'];
 
         $tempat        = $d_not['tempat'];
         $peserta       = $d_not['peserta'];
@@ -97,28 +87,20 @@ if ($id_undangan > 0 && !$is_loaded_from_archive && !isset($_POST['unit_kerja'])
         $pembahasan    = $d_not['isi_pembahasan'];
         $kesimpulan    = $d_not['isi_kesimpulan'];
 
-        // TTD
         $p_tempat      = $d_not['tempat_pembuatan'];
         $p_tanggal     = $d_not['tanggal_pembuatan'];
         $p_notulis     = $d_not['nama_notulis'];
-
-        // Decode Images
         $dokumentasi_files = json_decode($d_not['foto_dokumentasi'], true) ?? [];
         $absensi_files     = json_decode($d_not['foto_absensi'], true) ?? [];
 
         $lampiran      = $d_not['lampiran_ket'] ?? "1. Dokumentasi\n2. Daftar Hadir";
     } else {
-        // === CREATE MODE (Load from Undangan) ===
         $q_und = mysqli_query($koneksi, "SELECT * FROM undangan WHERE id_u = '$id_undangan'");
         if ($d_und = mysqli_fetch_assoc($q_und)) {
             $nama_kegiatan = $d_und['nama_kegiatan'];
             $tanggal_raw   = $d_und['hari_tanggal_acara'];
             $tempat        = $d_und['tempat_acara'];
-            // $agenda        = $d_und['agenda']; // Notulensi biasanya punya agenda standar sendiri
-            $topik         = $d_und['perihal']; // Atau nama kegiatan
-
-            // Coba parsing waktu
-            // Format di DB: "09:00 s.d 12:00 WIB"
+            $topik         = $d_und['perihal'];
             $waktu_parts = explode(' s.d ', str_replace(' WIB', '', $d_und['waktu_acara']));
             $pukul_mulai = $waktu_parts[0] ?? '09:00';
             $pukul_selesai = $waktu_parts[1] ?? 'Selesai';
@@ -126,8 +108,7 @@ if ($id_undangan > 0 && !$is_loaded_from_archive && !isset($_POST['unit_kerja'])
     }
 }
 
-// ========== DATA DEFAULT (Using fallback if not loaded) ==========
-// Only set defaults if variables not already set
+// TAMPILAN TEMPLATE NOTULENSI //
 $unit_kerja    = $unit_kerja ?? ($_POST['unit_kerja'] ?? 'Tim Kegiatan Pembinaan Desa Cantik BPS Kota Depok');
 $tanggal_raw   = $tanggal_raw ?? ($_POST['tanggal'] ?? date('Y-m-d'));
 $pimpinan      = $pimpinan ?? ($_POST['pimpinan'] ?? 'Satriana Yasmuarto, S.Si, MM');
@@ -140,21 +121,16 @@ $peserta       = $peserta ?? ($_POST['peserta'] ?? "Sebagaimana Terlampir");
 $agenda        = $agenda ?? ($_POST['agenda'] ?? "✓ Pembukaan\n✓ Pembahasan dan Diskusi\n✓ Kesimpulan dan Tindak Lanjut");
 $pembukaan     = $pembukaan ?? ($_POST['pembukaan'] ?? "Silakan isi pembukaan rapat di sini.");
 $pembahasan    = $pembahasan ?? ($_POST['pembahasan'] ?? "Silakan isi pembahasan dan diskusi di sini.");
-$kesimpulan    = $kesimpulan ?? ($_POST[''] ?? "(enter untuk memulai)");
+$kesimpulan    = $kesimpulan ?? ($_POST['kesimpulan'] ?? "(enter untuk memulai)");
 
-// Initialize nama_kegiatan if empty
-// Support pre-fill from arsip manual "Buat" button via URL parameter
 if (isset($_GET['nama']) && !empty($_GET['nama']) && !isset($nama_kegiatan)) {
     $nama_kegiatan = $_GET['nama'];
 }
 $nama_kegiatan = $nama_kegiatan ?? ($_POST['nama_kegiatan'] ?? '');
-
-// TTD Notulis (Load or Default)
 $p_tempat  = $_POST['p_tempat'] ?? ($p_tempat ?? 'Depok');
 $p_tanggal = $_POST['p_tanggal'] ?? ($p_tanggal ?? date('Y-m-d'));
 $p_notulis = $_POST['p_notulis'] ?? ($p_notulis ?? 'Nurine Kristy');
 
-// ========== PRINT MODE ==========
 $is_print = (isset($_GET['print']) && $_GET['print'] === '1');
 
 if ($is_print) {
@@ -166,7 +142,6 @@ if ($is_print) {
         <meta charset="utf-8">
         <title>Print Notulensi</title>
         <style>
-            /* 1. Reset Dasar */
             html,
             body {
                 margin: 0;
@@ -176,27 +151,22 @@ if ($is_print) {
                 color: #000;
             }
 
-            /* 2. Pengaturan Halaman Fisik */
             @page {
                 size: letter;
-                /* Memberikan margin fisik pada kertas (Atas, Kanan, Bawah, Kiri) */
                 margin: 2cm;
             }
 
-            /* 3. Kontainer Konten */
             .print-area {
                 width: 100%;
                 margin: 0;
                 padding: 0;
             }
 
-            /* 4. Styling Tabel (Sama dengan format PDF Anda) */
             table {
                 width: 100%;
                 border-collapse: collapse;
                 margin: 0;
                 table-layout: fixed;
-                /* Mencegah tabel meluber keluar margin */
             }
 
             td {
@@ -212,7 +182,6 @@ if ($is_print) {
                 width: 130px;
             }
 
-            /* 5. Resume Box */
             .resume {
                 border: 1px solid #000;
                 border-top: none;
@@ -229,18 +198,14 @@ if ($is_print) {
 
             .spacer {
                 height: 5mm;
-                /* Jarak antar tabel */
             }
 
-            /* 6. Kontrol Pemotongan Halaman (PENTING) */
             @media print {
 
-                /* Mencegah satu baris tabel terpotong di antara dua halaman */
                 tr {
                     page-break-inside: avoid;
                 }
 
-                /* Menghilangkan sisa-sisa padding/margin browser */
                 body {
                     -webkit-print-color-adjust: exact !important;
                     print-color-adjust: exact !important;
@@ -331,7 +296,7 @@ if ($is_print) {
 
             <div class="spacer"></div>
 
-            <!-- TANDA TANGAN -->
+            <!-- TANDA TANGAN NOTULIS -->
             <table style="width: 100%; border: none;">
                 <tr style="border: none;">
                     <td style="border: none; width: 70%;"></td>
@@ -443,17 +408,12 @@ if ($is_print) {
             color: white;
         }
 
-        /* layout 2 panel - Flexbox for Manual Control */
         .grid {
             display: flex;
             flex-wrap: wrap;
             gap: 30px;
             align-items: start;
         }
-
-        /* Desktop: Preview (Left), Form (Right) */
-        /* Removed order properties as per instruction */
-        /* Removed @media (max-width: 900px) to prevent premature mobile layout */
 
         .card {
             background: var(--card);
@@ -464,21 +424,11 @@ if ($is_print) {
             margin-bottom: 30px;
         }
 
-        /* == FITUR BARU: KONTROL LEBAR PREVIEW == */
         .preview-card {
-            /* Mencegah overflow flex item */
             width: 650px;
             margin: 0;
             min-height: 297mm;
             position: static
-                /* [INSTRUKSI PENGGUNA] 
-               Jika ingin mengatur lebar manual (misal 800px atau 60%):
-               1. Ganti flex-grow menjadi 0
-               2. Uncomment (hapus tanda / * * /) pada baris width di bawah ini
-            */
-
-                /* flex-grow: 0; */
-                /* width: 1000px; */
         }
 
 
@@ -531,16 +481,14 @@ if ($is_print) {
         }
 
         .form-card {
-            width: 500px;
+            width: 520px;
             flex-shrink: 0;
-            /* Jangan mengecil, tetap 550px */
             background: white;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             height: fit-content;
         }
 
-        /* Form Sections */
         .form-section {
             background: #f8fafc;
             border: 1px dashed #cbd5e1;
@@ -567,7 +515,6 @@ if ($is_print) {
             border-bottom-right-radius: 8px;
         }
 
-        /* table form */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -606,7 +553,6 @@ if ($is_print) {
             height: 12px;
         }
 
-        /* PREVIEW A4 STYLE */
         .paper {
             background: #fff;
             padding: 0;
@@ -659,7 +605,6 @@ if ($is_print) {
 
 
 
-        /* responsive */
         @media (max-width: 1100px) {
             .grid {
                 grid-template-columns: 1fr;
@@ -670,127 +615,31 @@ if ($is_print) {
             }
         }
 
-        /* ===== CONTAINER ===== */
         .container {
             display: flex;
             min-height: 100vh;
         }
 
-        .sidebar {
-            /* kotak navigasi */
-            width: 250px;
-            height: 100vh;
-            background-color: #ffffff;
-            box-shadow: 5px 0 15px rgba(27, 110, 235, 0.1);
-            padding: 20px 0;
-            position: fixed;
-            left: 0;
-            top: 0;
-            z-index: 1000;
-            transition: all 0.3s ease;
-        }
 
-        .sidebar h2 {
-            /*judul navigasi */
-            text-align: center;
-            color: #1976d2;
-            margin-bottom: 30px;
-            font-size: 28px;
-            font-weight: 700;
-            position: relative;
-        }
-
-        .sidebar h2:after {
-            content: '';
-            position: absolute;
-            bottom: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60px;
-            height: 3px;
-            background: #1976d2;
-            border-radius: 3px;
-        }
-
-        .sidebar ul {
-            /* kotak isi */
-            list-style: none;
-            padding: 0;
-            /* kotak teks */
-            margin: 0;
-        }
-
-        .sidebar li {
-            /* jarak per item */
-            margin: 5px 0;
-        }
-
-        .sidebar a {
-            /* teks sama choice */
-            display: flex;
-            align-items: center;
-            padding: 15px 25px;
-            color: #1e70ebff;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            font-size: 16px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .sidebar a i {
-            margin-right: 15px;
-            width: 20px;
-            text-align: center;
-        }
-
-        .sidebar a:hover,
-        .sidebar a.active {
-            background-color: #e3f2fd;
-            color: #0d47a1;
-            transform: translateX(5px);
-        }
-
-        .sidebar a.active {
-            border-left: 4px solid #1976d2;
-            font-weight: 600;
-        }
 
         .main-content {
             flex: 1;
             padding: 20px;
             overflow-y: auto;
-            margin-left: 140px;
-            /* Removed grid properties from here, let .grid handle layout */
+            margin-left: 120px;
         }
 
-        /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
-
-            /* 1. Reset Container Internal */
             .main-content .container {
                 display: block !important;
                 width: 100% !important;
                 padding: 0 !important;
             }
 
-            /* 2. Sembunyikan Sidebar Internal */
-            .main-content .sidebar {
-                display: none !important;
-            }
 
-            /* 3. Atur Konten Utama Internal */
-            .main-content .main-content {
-                margin-left: 160px !important;
-                width: 100% !important;
-                display: flex !important;
-                flex-direction: column !important;
-                /* Tumpuk atas bawah */
-                gap: 20px !important;
-                padding: 10px !important;
-            }
 
-            /* Penyesuaian font size di mobile jika perlu */
+
+
             .main-content .preview .kop-text .instansi-name {
                 font-size: 14pt !important;
             }
@@ -803,32 +652,25 @@ if ($is_print) {
                 font-size: 11pt !important;
             }
 
-            /* 4. Grid Layout menjadi Stack */
             .grid {
                 display: flex !important;
                 flex-direction: column !important;
                 gap: 20px !important;
             }
 
-            /* 5. Form Card Lebar Penuh */
             .form-card {
                 width: 100% !important;
                 max-width: 100% !important;
                 margin-bottom: 10px;
-                /* Form di atas */
             }
 
-            /* 6. Preview Card Lebar Penuh & di Bawah */
             .preview-card {
                 width: 100% !important;
                 max-width: 100% !important;
                 order: 2;
-                /* Preview di bawah */
                 position: static !important;
-                /* Matikan sticky agar flow normal */
             }
 
-            /* 7. Action Buttons Full Width */
             .actions {
                 flex-direction: column;
             }
@@ -838,40 +680,33 @@ if ($is_print) {
                 margin-bottom: 5px;
             }
 
-            /* 8. Refine Preview Box (Fix Cutoff) */
             #paperPreview {
                 height: auto !important;
                 aspect-ratio: unset !important;
                 overflow: visible !important;
-                /* Biarkan konten melebar ke bawah */
                 border: 1px solid #ddd;
             }
 
             .page-view,
             .doc-page {
                 position: relative !important;
-                /* Jangan absolute agar bisa scroll/flow */
                 width: 100% !important;
                 height: auto !important;
                 padding: 10px !important;
-                /* Kurangi padding drastis */
                 left: auto !important;
                 top: auto !important;
             }
 
-            /* Kecilkan font di preview mobile agar tabel muat */
             .page-view table td,
             .doc-page table td {
                 font-size: 10pt !important;
                 padding: 4px !important;
             }
 
-            /* Tabel bisa discroll horizontal jika masih terlalu lebar */
             .preview-box {
                 overflow-x: auto;
             }
 
-            /* 9. Fix Documentation Content Alignment */
             .doc-page {
                 display: flex !important;
                 flex-direction: column !important;
@@ -881,9 +716,7 @@ if ($is_print) {
             }
 
             .doc-page>div {
-                /* Container gambar yang dibuat via JS */
                 height: auto !important;
-                /* Override inline height 90% */
                 min-height: 0 !important;
                 justify-content: flex-start !important;
                 margin-top: 0 !important;
@@ -904,12 +737,8 @@ if ($is_print) {
             }
         }
 
-        /* print from page (ctrl+p) => hanya preview */
         @media print {
-            .sidebar {
 
-                display: none;
-            }
 
             .container {
                 display: block;
@@ -948,7 +777,6 @@ if ($is_print) {
             }
         }
 
-        /* Existing Photo Gallery */
         .existing-photos {
             display: flex;
             flex-wrap: wrap;
@@ -1009,27 +837,13 @@ if ($is_print) {
 </head>
 
 <body>
+
     <div class="container">
-        <div class="sidebar">
-            <h2>SI UANG</h2>
-            <ul>
-                <li><a href="index.php?page=beranda"><i class="fas fa-home"></i> Beranda</a></li>
-                <li><a href="index.php?page=undangan"><i class="fas fa-envelope"></i> Undangan</a></li>
-                <li><a href="index.php?page=notulensi" class="active"><i class="fas fa-file-alt"></i> Notulensi</a></li>
-                <li><a href="index.php?page=absensi"><i class="fas fa-user-check"></i> Absensi</a></li>
-                <li><a href="index.php?page=arsip"><i class="fas fa-archive"></i> Arsip</a></li>
-                <li style="position: absolute; bottom: 0px; right: 0px; left: 0px;"><a href="index.php?page=logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-            </ul>
-        </div>
+
         <div class="main-content">
-
-
             <div class="page-wrap">
-
-
-
                 <div class="grid">
-                    <!-- FORM -->
+                    <!-- TAMPILAN FORM NOTULENSI-->
                     <div class="card form-card">
                         <div class="card-head">
                             <h3>Buat Notulensi</h3>
@@ -1038,11 +852,9 @@ if ($is_print) {
                             <form method="POST" id="notulenForm">
                                 <input type="hidden" name="id_undangan" value="<?= $id_undangan ?>">
                                 <input type="hidden" name="id_n" value="<?= $id_undangan ?>">
-                                <!-- HIDDEN INPUTS FOR EXISTING FILES -->
                                 <?php if (!empty($dokumentasi_files)): ?>
                                     <?php foreach ($dokumentasi_files as $f):
                                         $val = $f;
-                                        // Fix path for archive files
                                         if (isset($is_loaded_from_archive) && $is_loaded_from_archive && (strpos($f, 'arsip/') !== 0) && (strpos($f, 'uploads/') !== 0)) {
                                             $val = 'arsip/' . ($folder ?? '') . '/' . $f;
                                         }
@@ -1061,7 +873,6 @@ if ($is_print) {
                                         <input type="hidden" name="existing_absensi[]" value="<?= htmlspecialchars($val) ?>">
                                     <?php endforeach; ?>
                                 <?php endif; ?>
-                                <!-- DATA RAPAT (Collapsible) -->
                                 <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; margin-bottom: 20px;">
                                     <div style="padding: 12px 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="toggleDataRapat(this)">
                                         <span style="font-weight: bold; color: #475569;"><i class="fas fa-sliders-h"></i> Identitas Notulensi</span>
@@ -1077,15 +888,13 @@ if ($is_print) {
                                             </div>
                                             <div>
                                                 <label class="hint">Unit Kerja</label>
-                                                <textarea name="unit_kerja" rows="1"><?= htmlspecialchars($unit_kerja) ?></textarea>
+                                                <textarea name="unit_kerja" style="height: 100px; overflow-y: auto; resize: vertical;"><?= htmlspecialchars($unit_kerja) ?></textarea>
                                             </div>
+
                                             <div>
                                                 <label class="hint">Tanggal Rapat</label>
                                                 <input type="date" name="tanggal" value="<?= $tanggal_raw ?>">
                                             </div>
-
-
-
                                         </div>
 
                                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
@@ -1115,19 +924,34 @@ if ($is_print) {
 
                                         <div style="margin-bottom: 15px;">
                                             <label class="hint">Lampiran</label>
-                                            <textarea name="lampiran" rows="2"><?= htmlspecialchars($lampiran) ?></textarea>
+                                            <textarea name="lampiran" style="height: 100px; overflow-y: auto; resize: vertical;"><?= htmlspecialchars($lampiran) ?></textarea>
                                         </div>
 
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                        <div style="display: grid; grid-template-columns: 1fr; gap: 15px;">
                                             <div>
                                                 <label class="hint">Peserta</label>
-                                                <textarea name="peserta" rows="1" readonly style="background: #f1f5f9; color: #64748b;"><?= htmlspecialchars($peserta) ?></textarea>
+                                                <textarea name="peserta" style="overflow:hidden; resize:none;" oninput="autoResize(this)"><?= htmlspecialchars($peserta) ?></textarea>
                                             </div>
                                             <div>
                                                 <label class="hint">Agenda</label>
-                                                <textarea name="agenda" rows="1" readonly style="background: #f1f5f9; color: #64748b;"><?= htmlspecialchars($agenda) ?></textarea>
+                                                <textarea name="agenda" style="height: 100px; overflow-y: auto; resize: vertical;"><?= htmlspecialchars($agenda) ?></textarea>
                                             </div>
                                         </div>
+
+                                        <!-- Script autoResize hanya untuk Peserta -->
+                                        <script>
+                                            function autoResize(t) {
+                                                t.style.height = 'auto';
+                                                t.style.height = (t.scrollHeight) + 'px';
+                                            }
+
+                                            document.addEventListener("DOMContentLoaded", function() {
+                                                const textareas = document.querySelectorAll('textarea[name="peserta"]');
+                                                textareas.forEach(t => {
+                                                    autoResize(t);
+                                                });
+                                            });
+                                        </script>
 
                                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; padding-top:15px; border-top: 1px dashed #eee;">
                                             <div>
@@ -1151,7 +975,6 @@ if ($is_print) {
                                     function toggleSection(header, contentId) {
                                         const content = document.getElementById(contentId);
                                         const icon = header.querySelector('.fa-chevron-down');
-                                        // Check computed style because class sets display:none
                                         const isHidden = window.getComputedStyle(content).display === 'none';
 
                                         if (isHidden) {
@@ -1167,6 +990,20 @@ if ($is_print) {
                                     function toggleDataRapat(header) {
                                         toggleSection(header, 'data-rapat-content');
                                     }
+                                </script>
+
+                                <script>
+                                    function autoResize(t) {
+                                        t.style.height = 'auto';
+                                        t.style.height = (t.scrollHeight) + 'px';
+                                    }
+
+                                    document.addEventListener("DOMContentLoaded", function() {
+                                        const textareas = document.querySelectorAll('textarea[name="lampiran"], textarea[name="peserta"], textarea[name="agenda"]');
+                                        textareas.forEach(t => {
+                                            autoResize(t);
+                                        });
+                                    });
                                 </script>
 
                                 <!-- Pembukaan -->
@@ -1217,7 +1054,6 @@ if ($is_print) {
                                                     if (isset($is_loaded_from_archive) && $is_loaded_from_archive && (strpos($f, 'arsip/') !== 0) && (strpos($f, 'uploads/') !== 0)) {
                                                         $imgVal = 'arsip/' . ($folder ?? '') . '/' . $f;
                                                     }
-                                                    // Build display path - tanpa ../ karena diload via index.php di root
                                                     $imgSrc = (strpos($imgVal, '/') === false) ? 'uploads/dokumentasi/' . $imgVal : $imgVal;
                                                 ?>
                                                     <div class="existing-photo-item" data-file="<?= htmlspecialchars($imgVal) ?>">
@@ -1230,7 +1066,6 @@ if ($is_print) {
 
                                         <label class="hint" style="display:block; margin-bottom:8px;">Unggah Foto (Max 4)</label>
 
-                                        <!-- Custom File Input -->
                                         <div style="display: flex; gap: 10px; align-items: center;">
                                             <label for="inputDokumentasi" style="cursor: pointer; background: #e2e8f0; color: #475569; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s;">
                                                 <i class="fas fa-camera"></i> Pilih Foto
@@ -1258,7 +1093,6 @@ if ($is_print) {
                                                     if (isset($is_loaded_from_archive) && $is_loaded_from_archive && (strpos($f, 'arsip/') !== 0) && (strpos($f, 'uploads/') !== 0)) {
                                                         $imgVal = 'arsip/' . ($folder ?? '') . '/' . $f;
                                                     }
-                                                    // Build display path - tanpa ../ karena diload via index.php di root
                                                     $imgSrc = (strpos($imgVal, '/') === false) ? 'uploads/absensi/' . $imgVal : $imgVal;
                                                 ?>
                                                     <div class="existing-photo-item" data-file="<?= htmlspecialchars($imgVal) ?>">
@@ -1272,14 +1106,16 @@ if ($is_print) {
                                         <label class="hint" style="display:block; margin-bottom:15px; font-weight: bold;">Unggah Bukti Absensi</label>
 
                                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
-                                            <!-- link daftar hadir -->
-                                            <a href="https://daftarhadir.web.bps.go.id/#/login" target="_blank" style="text-decoration: none; color: #3b82f6; font-weight: bold; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; background: #eff6ff; border-radius: 6px; border: 1px solid #bfdbfe;">
+                                            <!-- EMBEDED LINK DAFTAR HADIR -->
+                                            <a href="https://daftarhadir.web.bps.go.id/#/login" target="_blank"
+                                                style="text-decoration: none; color: #3b82f6; font-weight: bold; font-size: 13px; display: inline-flex;
+                                            align-items: center; gap: 5px; padding: 6px 10px; background: #eff6ff; border-radius: 6px; border: 1px solid #bfdbfe;">
                                                 <i class="fas fa-external-link-alt"></i> Link Daftar Hadir
                                             </a>
 
-                                            <!-- Upload Button -->
                                             <div style="display: flex; gap: 10px; align-items: center;">
-                                                <label for="inputAbsensi" style="cursor: pointer; background: #e2e8f0; color: #475569; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s;">
+                                                <label for="inputAbsensi" style="cursor: pointer; background: #e2e8f0; color: #475569; padding: 8px 16px; 
+                                                border-radius: 6px; font-weight: bold; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s;">
                                                     <i class="fas fa-upload"></i> Pilih File
                                                 </label>
                                             </div>
@@ -1295,32 +1131,26 @@ if ($is_print) {
                                     </div>
                                 </div>
 
-                                <!-- ACTION BUTTONS BOTTOM -->
                                 <div class="actions" style="margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
                                     <button class="btn save" type="button" onclick="saveNotulensi()" style="flex: 1; justify-content: center; font-size: 16px; padding: 8px;"><i class="fas fa-save"></i> Simpan Notulensi</button>
                                     <button class="btn print" type="button" onclick="cetakPDF(this)" style="flex: 1; justify-content: center; font-size: 16px; padding: 8px;"><i class="fas fa-print"></i> Cetak PDF</button>
                                 </div>
-
                             </form>
                         </div>
                     </div>
 
 
-                    <!-- PREVIEW -->
+                    <!-- TAMPILAN PREVIEW NOTULENSI -->
                     <div class="card preview-card" style="position: sticky; top: 20px;">
-                        <!-- Navigation Controls -->
                         <div style="background: #e2e8f0; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #cbd5e1;">
                             <span style="font-weight: bold; font-size: 13px; color: #475569;">Preview</span>
                             <div style="display: flex; gap: 5px; align-items: center;" id="navControls">
-                                <!-- Dynamic Buttons injected here -->
                                 <button type="button" class="nav-btn active" onclick="switchPage(1)">1</button>
                                 <button type="button" class="nav-btn" onclick="nextPage()"><i class="fas fa-chevron-right"></i></button>
                             </div>
                         </div>
 
                         <div class="card-body paper" id="paperPreview" style="min-height: 800px; position: relative; overflow: hidden;">
-
-                            <!-- PAGE 1: TEXT -->
                             <div class="page-view" id="page1" style="width: 100%; transition: transform 0.3s ease;">
                                 <table>
                                     <tr>
@@ -1381,7 +1211,7 @@ if ($is_print) {
                                     <div id="pv_kesimpulan"></div>
                                 </div>
 
-                                <!-- SIGNATURE PREVIEW -->
+                                <!-- TANDA TANGAN NOTULIS -->
                                 <div style="margin-top: 40px; display: flex; justify-content: flex-end;">
                                     <div style="text-align: center; width: 300px;">
                                         <p id="pv_tempat_tgl" style="margin-bottom: 5px;"><?= htmlspecialchars($p_tempat) ?>, <?= formatTanggalIndo($p_tanggal) ?></p>
@@ -1393,9 +1223,6 @@ if ($is_print) {
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Dynamic Pages (2, 3...) will be injected here -->
-
                         </div>
                     </div>
 
@@ -1404,7 +1231,7 @@ if ($is_print) {
         </div>
     </div>
 
-    <!-- Styles for Navigation Buttons -->
+    <!-- STYLE UNTUK NAVIGASI -->
     <style>
         .nav-btn {
             border: none;
@@ -1435,7 +1262,6 @@ if ($is_print) {
             position: absolute;
             top: 0;
             left: 100%;
-            /* Initially hidden to the right */
             width: 50%;
             height: auto;
             background: #fff;
@@ -1444,13 +1270,11 @@ if ($is_print) {
             overflow-y: auto;
         }
 
-        /* Auto Height Logic */
         .paper.auto-height {
             aspect-ratio: unset !important;
             height: auto !important;
             overflow: visible !important;
             min-height: 297mm;
-            /* Ensure at least A4 height */
         }
 
         .page-view.relative-flow {
@@ -1461,14 +1285,11 @@ if ($is_print) {
         }
     </style>
 
+
     <script>
-        // Initialize DataTransfer objects for file accumulation
         window.dtDokumentasi = new DataTransfer();
         window.dtAbsensi = new DataTransfer();
 
-        /* =========================
-   HELPER
-========================= */
         function escapeHtml(s) {
             return (s || '').replace(/[&<>"']/g, c => ({
                 '&': '&amp;',
@@ -1483,14 +1304,6 @@ if ($is_print) {
             return escapeHtml(s).replace(/\n/g, '<br>');
         }
 
-        function autoResize(t) {
-            t.style.height = 'auto';
-            t.style.height = t.scrollHeight + 'px';
-        }
-
-        /* =========================
-           REMOVE EXISTING PHOTO
-        ========================= */
         function removeExistingFile(btn) {
             Swal.fire({
                 title: 'Hapus foto ini?',
@@ -1503,15 +1316,10 @@ if ($is_print) {
                 cancelButtonText: 'Batal'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // 1. Get the file value from data attribute
                     const item = btn.closest('.existing-photo-item');
                     const fileValue = item ? item.getAttribute('data-file') : null;
-
-                    // 2. Determine type (dokumentasi or absensi) by checking parent gallery
                     const gallery = item ? item.parentElement : null;
                     const isDok = gallery && gallery.id === 'existingDokGallery';
-
-                    // 3. Remove from server arrays (for preview sync)
                     if (fileValue) {
                         if (isDok && window.serverDocFiles) {
                             window.serverDocFiles = window.serverDocFiles.filter(f => f !== fileValue);
@@ -1520,14 +1328,12 @@ if ($is_print) {
                         }
                     }
 
-                    // 4. Remove the thumbnail with animation
                     if (item) {
                         item.style.transition = 'opacity 0.3s, transform 0.3s';
                         item.style.opacity = '0';
                         item.style.transform = 'scale(0.8)';
                         setTimeout(function() {
                             item.remove();
-                            // If gallery is now empty, remove it and label
                             if (gallery && gallery.children.length === 0) {
                                 const label = gallery.previousElementSibling;
                                 if (label && label.classList.contains('existing-label')) label.remove();
@@ -1536,7 +1342,6 @@ if ($is_print) {
                         }, 300);
                     }
 
-                    // 5. Remove the matching hidden input by value
                     if (fileValue) {
                         const form = document.getElementById('notulenForm');
                         const allHidden = form.querySelectorAll('input[type="hidden"]');
@@ -1547,7 +1352,6 @@ if ($is_print) {
                         });
                     }
 
-                    // 6. Refresh preview panel
                     previewImages();
 
                     Swal.fire({
@@ -1561,9 +1365,6 @@ if ($is_print) {
             });
         }
 
-        /* =========================
-           REMOVE NEW UPLOAD PHOTO
-        ========================= */
         function removeNewUpload(type, btn, index) {
             Swal.fire({
                 title: 'Hapus foto ini?',
@@ -1576,26 +1377,21 @@ if ($is_print) {
                 cancelButtonText: 'Batal'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // 1. Update DataTransfer Object
                     const dt = type === 'dokumentasi' ? window.dtDokumentasi : window.dtAbsensi;
                     if (index >= 0 && index < dt.items.length) {
                         dt.items.remove(index);
                     }
-
-                    // 2. Sync to Input
                     const inputId = type === 'dokumentasi' ? 'inputDokumentasi' : 'inputAbsensi';
                     const fileInput = document.getElementById(inputId);
                     if (fileInput) {
                         fileInput.files = dt.files;
                     }
 
-                    // 3. Remove thumbnail (Visual only, will be refreshed)
                     const item = btn.closest('.existing-photo-item');
                     if (item) {
                         item.remove();
                     }
 
-                    // 4. Refresh preview
                     previewImages();
 
                     Swal.fire({
@@ -1609,9 +1405,6 @@ if ($is_print) {
             });
         }
 
-        /* =========================
-           NAVIGATION PREVIEW
-        ========================= */
         let currentPage = 1;
         let totalPages = 1;
         const archiveFolder = '<?= $folder ?? '' ?>';
@@ -1636,19 +1429,17 @@ if ($is_print) {
             const paper = document.getElementById('paperPreview');
             const p1 = document.getElementById('page1');
 
-            // Handle Page 1 Logic
             if (page === 1) {
                 paper.classList.add('auto-height');
                 p1.classList.add('relative-flow');
-                p1.style.transform = 'none'; // Clear transform
+                p1.style.transform = 'none';
             } else {
                 paper.classList.remove('auto-height');
                 p1.classList.remove('relative-flow');
                 p1.style.transform = 'translateX(-100%)';
-                p1.style.position = 'absolute'; // Ensure it goes back to absolute
+                p1.style.position = 'absolute';
             }
 
-            // Handle Dynamic Pages (2, 3...)
             const docPages = document.querySelectorAll('.doc-page');
             docPages.forEach((p, idx) => {
                 const pageNum = idx + 2;
@@ -1670,17 +1461,13 @@ if ($is_print) {
             switchPage(next);
         }
 
-        /* =========================
-           IMAGE PREVIEW
-        ========================= */
         function previewImages() {
             const inputDoc = document.getElementById('inputDokumentasi');
             const inputAbs = document.getElementById('inputAbsensi');
             const paper = document.getElementById('paperPreview');
 
-            // Update label counts
             const countSpanDoc = document.getElementById('fileCount');
-            const countSpanAbs = document.getElementById('fileCountAbsensi'); // Use specific ID
+            const countSpanAbs = document.getElementById('fileCountAbsensi');
 
             if (inputDoc.files.length > 0) {
                 countSpanDoc.textContent = inputDoc.files.length + ' file dipilih';
@@ -1696,15 +1483,11 @@ if ($is_print) {
                 }
             }
 
-            // Remove existing doc pages (and absensi pages if any share the class)
             const existing = document.querySelectorAll('.doc-page');
             existing.forEach(e => e.remove());
 
-            // Start Page Counting
             totalPages = 1;
 
-            // --- PROCESS DOKUMENTASI ---
-            // Combine separate arrays: Server Files + New Input Files
             const newDocs = Array.from(inputDoc.files);
             const allDocs = [...(window.serverDocFiles || []), ...newDocs].slice(0, 4);
 
@@ -1717,12 +1500,10 @@ if ($is_print) {
                 }
             }
 
-            // --- PROCESS ABSENSI ---
             const newAbs = Array.from(inputAbs.files);
             const allAbs = [...(window.serverAbsFiles || []), ...newAbs].slice(0, 4);
 
             if (allAbs.length > 0) {
-                // 2 Images per page for Absensi (assuming A4 landscape fit)
                 const chunkSize = 2;
                 for (let i = 0; i < allAbs.length; i += chunkSize) {
                     const chunk = allAbs.slice(i, i + chunkSize);
@@ -1731,25 +1512,18 @@ if ($is_print) {
                 }
             }
 
-            // Update UI
             updateNavUI();
 
-            // Update Counts Logic to include Server files
             if (allDocs.length > 0) countSpanDoc.textContent = allDocs.length + ' file (Total)';
             if (countSpanAbs && allAbs.length > 0) countSpanAbs.textContent = allAbs.length + ' file (Total)';
-
-            // --- RENDER NEW UPLOAD THUMBNAILS IN FORM GALLERY ---
-            // Remove previously rendered new-upload thumbnails
             document.querySelectorAll('.new-upload-thumb').forEach(function(el) {
                 el.remove();
             });
 
-            // Helper to render thumbnails for mixed types (Img/PDF)
             function renderThumbnails(files, galleryId, contentId, type, labelText) {
                 if (files.length === 0) return;
 
                 let gallery = document.getElementById(galleryId);
-                // Create gallery container if it doesn't exist yet
                 if (!gallery) {
                     const content = document.getElementById(contentId);
                     const label = document.createElement('label');
@@ -1765,15 +1539,12 @@ if ($is_print) {
 
                 files.forEach(function(file, index) {
                     if (file.type === 'application/pdf') {
-                        // PDF Thumbnail
                         const div = document.createElement('div');
                         div.className = 'existing-photo-item new-upload-thumb';
-                        // Default PDF Icon style
                         div.innerHTML = '<div style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; background:#f1f5f9; color:#ef4444; font-size:40px;"><i class="fas fa-file-pdf"></i><span style="font-size:10px; color:#333; margin-top:5px; padding:0 5px; text-align:center; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; width:100%;">' + file.name + '</span></div>' +
                             '<button type="button" class="btn-remove" onclick="removeNewUpload(\'' + type + '\', this, ' + index + ')" title="Hapus file ini">&times;</button>';
                         gallery.appendChild(div);
                     } else {
-                        // Image Thumbnail
                         const reader = new FileReader();
                         reader.onload = function(e) {
                             const div = document.createElement('div');
@@ -1788,10 +1559,8 @@ if ($is_print) {
             }
 
             renderThumbnails(newDocs, 'existingDokGallery', 'dokumentasi-content', 'dokumentasi', 'Foto yang sudah diupload:');
-            // Allow PDF for Absensi now too
             renderThumbnails(newAbs, 'existingAbsGallery', 'absensi-content', 'absensi', 'File absensi yang sudah diupload:');
 
-            // Navigate logic
             if (currentPage > totalPages) {
                 switchPage(totalPages);
             } else if (totalPages > 1 && currentPage === 1 && (inputDoc.files.length > 0 || inputAbs.files.length > 0)) {
@@ -1830,11 +1599,9 @@ if ($is_print) {
                             reader.readAsDataURL(file);
                         }
                     } else if (typeof file === 'string') {
-                        // Handle server file (string path)
                         src = file;
                         fileName = src.split('/').pop();
 
-                        // Basic check for PDF extension
                         if (src.toLowerCase().endsWith('.pdf')) {
                             isPdf = true;
                             renderPdfPlaceholder(fileName);
@@ -1856,9 +1623,9 @@ if ($is_print) {
                         const box = document.createElement('div');
                         box.style.cssText = 'width: 90%; height: 150px; background: #f8fafc; border: 2px dashed #94a3b8; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #475569; margin-bottom: 20px;';
                         box.innerHTML = `
-                            <i class="fas fa-file-pdf" style="font-size: 40px; margin-bottom: 10px; color: #ef4444;"></i>
-                            <span style="font-weight: bold; font-size: 14px;">${escapeHtml(name)}</span>
-                            <span style="font-size: 12px; color: #64748b; margin-top: 5px;">(akan digabung di akhir dokumen)</span>
+                        <i class="fas fa-file-pdf" style="font-size: 40px; margin-bottom: 10px; color: #ef4444;"></i>
+                        <span style="font-weight: bold; font-size: 14px;">${escapeHtml(name)}</span>
+                        <span style="font-size: 12px; color: #64748b; margin-top: 5px;">(akan digabung di akhir dokumen)</span>
                         `;
                         imgContainer.appendChild(box);
                     }
@@ -1885,9 +1652,6 @@ if ($is_print) {
         }
 
 
-        /* =========================
-           UPDATE PREVIEW
-        ========================= */
         function updatePreview() {
             const get = n => document.querySelector(`[name="${n}"]`)?.value || '';
 
@@ -1927,7 +1691,6 @@ if ($is_print) {
                     tinymce.get('editor-kesimpulan').getContent();
             }
 
-            // UPDATE SIGNATURE PREVIEW
             const p_tempat = get('p_tempat');
             const p_tanggal = get('p_tanggal');
             const p_notulis = get('p_notulis');
@@ -1949,14 +1712,6 @@ if ($is_print) {
             if (elNotulis) elNotulis.textContent = p_notulis;
         }
 
-        /* =========================
-           SIMPAN KE SESSION (AJAX)
-        ========================= */
-
-
-        /* =========================
-           PREVIEW
-        ========================= */
         function previewNotulensi() {
             saveNotulensi();
             setTimeout(() => {
@@ -1964,22 +1719,14 @@ if ($is_print) {
             }, 300);
         }
 
-        /* =========================
-           LOCAL STORAGE
-        ========================= */
-        /* =========================
-           LOCAL STORAGE
-        ========================= */
         function loadFromLocalStorage() {
-            // 1. Check legacy 'notulensiData' first
             const legacy = localStorage.getItem('notulensiData');
             if (legacy) {
                 const d = JSON.parse(legacy);
                 const oldPembukaan = "<p>Rapat dimulai dengan sambutan pembukaan dari Bapak Satriana Yasmuarto..</p>";
-                const oldPembahasan = "<p><strong>a. Rancangan Kegiatan dan Jadwal Program Desa Cantik</strong></p><p>..</p>";
+                const oldPembahasan = "<p><strong>a. Rancangan Kegiatan dan Jadwal Program Desa Cantik</strong></p> <p>..</p>";
                 if (d.pembukaan === oldPembukaan && d.pembahasan === oldPembahasan) {
                     localStorage.removeItem('notulensiData');
-                    // Reset to new defaults if detected old junk
                     setTimeout(() => {
                         if (tinymce.get('editor-pembukaan')) tinymce.get('editor-pembukaan').setContent("Silakan isi pembukaan rapat di sini.");
                         if (tinymce.get('editor-pembahasan')) tinymce.get('editor-pembahasan').setContent("Silakan isi pembahasan dan diskusi di sini.");
@@ -1988,13 +1735,11 @@ if ($is_print) {
                 }
             }
 
-            // 2. Load Real Draft 'notulensi_draft'
             const saved = localStorage.getItem('notulensi_draft');
             if (!saved) return;
 
             try {
                 const d = JSON.parse(saved);
-                // Load Form Fields
                 Object.keys(d).forEach(k => {
                     if (k === 'dokumentasi' || k === 'absensi') return;
                     const el = document.querySelector(`[name="${k}"]`);
@@ -2014,9 +1759,6 @@ if ($is_print) {
             }
         }
 
-        /* =========================
-           NOTIF
-        ========================= */
         function showNotif() {
             Swal.fire({
                 icon: 'success',
@@ -2028,14 +1770,11 @@ if ($is_print) {
             });
         }
 
-        /* =========================
-           TINYMCE (FIXED)
-        ========================= */
         const tinyConfig = {
             license_key: 'gpl',
-            menubar: true, // [UPGRADE] Tampilkan Menu Bar ala Word
+            menubar: true,
             branding: false,
-            statusbar: true, // [UPGRADE] Tampilkan Status Bar
+            statusbar: true,
             plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount',
             toolbar: 'undo redo | blocks | ' +
                 'bold italic underline strikethrough | alignleft aligncenter ' +
@@ -2045,11 +1784,10 @@ if ($is_print) {
                         body { font-family: Arial, sans-serif; font-size: 11pt; }
                         .first-line-indent { text-indent: 40px; }
                         p { margin-top: 0; margin-bottom: 10px; }
-                    `,
+                        `,
             setup: ed => {
                 ed.on('change keyup', updatePreview);
 
-                // Register Custom Format
                 ed.on('init', function() {
                     ed.formatter.register('myIndent', {
                         block: 'p',
@@ -2057,9 +1795,8 @@ if ($is_print) {
                     });
                 });
 
-                // Register Custom Button
                 ed.ui.registry.addButton('indent_first', {
-                    icon: 'indent', // Using standard icon, or we could use 'paragraph'
+                    icon: 'indent',
                     tooltip: 'Indentasi Baris Pertama (Special)',
                     onAction: function(_) {
                         ed.formatter.toggle('myIndent');
@@ -2093,15 +1830,15 @@ if ($is_print) {
                 plugins: 'lists',
                 toolbar: false,
                 content_style: `
-            ul.checklist {
-                list-style: none;
-                padding-left: 0;
-            }
-            ul.checklist li::before {
-                content: "✓ ";
-                font-weight: bold;
-            }
-        `,
+                        ul.checklist {
+                        list-style: none;
+                        padding-left: 0;
+                        }
+                        ul.checklist li::before {
+                        content: "✓ ";
+                        font-weight: bold;
+                        }
+                        `,
                 setup: editor => {
                     editor.on('keydown', e => {
                         if (e.key === 'Enter') {
@@ -2118,26 +1855,18 @@ if ($is_print) {
             });
         }
 
-        /* =========================
-           EVENT
-        ========================= */
         window.addEventListener('load', () => {
             const isLoadedFromArchive = <?= $is_loaded_from_archive ? 'true' : 'false' ?>;
-            if (!isLoadedFromArchive) {
-                // loadFromLocalStorage(); // Only load local storage if not editing archive
-            }
+            if (!isLoadedFromArchive) {}
 
-            updateNavUI(); // Init Default
+            updateNavUI();
 
-            // Pass PHP Image Arrays to JS
             const existingDocFiles = <?= json_encode($dokumentasi_files ?? []) ?>;
             const existingAbsFiles = <?= json_encode($absensi_files ?? []) ?>;
 
-            // Store globally to use in updatePreview
             window.serverDocFiles = existingDocFiles;
             window.serverAbsFiles = existingAbsFiles;
 
-            // textarea NON TinyMCE saja
             document.querySelectorAll('textarea:not(#editor-pembukaan):not(#editor-pembahasan):not(#editor-kesimpulan)')
                 .forEach(t => {
                     autoResize(t);
@@ -2151,7 +1880,6 @@ if ($is_print) {
                 i.addEventListener('input', updatePreview);
             });
 
-            // File inputs - Trigger Image Preview
             const fDoc = document.getElementById('inputDokumentasi');
             const fAbs = document.getElementById('inputAbsensi');
 
@@ -2175,18 +1903,13 @@ if ($is_print) {
             }
 
             updatePreview();
-            // Render Initial Images (including Server Files)
             previewImages();
             switchPage(1);
         });
-        /* =========================
-           CETAK PDF & ARCHIVE
-        ========================= */
+
         function cetakPDF(btn) {
             const form = document.getElementById('notulenForm');
             const originalText = btn.innerText;
-
-            // 1. Validasi Input Penting
             const namaKegiatan = form.querySelector('[name="nama_kegiatan"]').value.trim();
             if (!namaKegiatan) {
                 Swal.fire({
@@ -2198,16 +1921,13 @@ if ($is_print) {
                 return;
             }
 
-            // Update UI
             btn.innerText = 'Menyimpan...';
             btn.disabled = true;
 
-            // Sync TinyMCE (Editor Teks)
             if (typeof tinymce !== 'undefined') tinymce.triggerSave();
 
             const data = new FormData(form);
 
-            // 2. Tentukan URL Action berdasarkan lokasi file
             let saveUrl = 'pages/save_notulensi.php';
             let pdfUrlBase = 'pdf/generate_notulensi.php';
 
@@ -2227,22 +1947,29 @@ if ($is_print) {
                     return response.text();
                 })
                 .then(result => {
-                    // Trim dan ambil hanya angka
                     let idNotulen = result.trim();
-                    // Hapus karakter non-digit (untuk bersihkan BOM atau whitespace bandel)
                     let cleanId = idNotulen.replace(/\D/g, '');
                     let idValid = parseInt(cleanId);
 
                     if (!isNaN(idValid) && idValid > 0) {
-                        // Update ID di form supaya save berikutnya jadi UPDATE
                         const inputId = form.querySelector('[name="id_undangan"]');
                         if (inputId && inputId.value == 0) inputId.value = idValid;
 
-                        // Buka PDF di tab baru
-                        btn.innerText = 'Membuka PDF...';
+                        btn.innerText = 'Mengunduh PDF...';
                         const tgl = form.querySelector('[name="p_tanggal"]')?.value || '';
-                        const pdfUrl = pdfUrlBase + '?id=' + idValid + '&tgl=' + encodeURIComponent(tgl);
-                        window.open(pdfUrl, '_blank');
+                        const pdfUrl = pdfUrlBase + '?id=' + idValid + '&tgl=' + encodeURIComponent(tgl) + '&download=true';
+
+                        // Gunakan Iframe untuk download otomatis
+                        const iframe = document.createElement('iframe');
+                        iframe.style.display = 'none';
+                        iframe.src = pdfUrl;
+                        document.body.appendChild(iframe);
+
+                        setTimeout(() => {
+                            if (document.body.contains(iframe)) {
+                                document.body.removeChild(iframe);
+                            }
+                        }, 10000);
                     } else {
                         Swal.fire({
                             icon: 'error',
@@ -2251,7 +1978,6 @@ if ($is_print) {
                         });
                     }
 
-                    // Reset button
                     btn.innerText = originalText;
                     btn.disabled = false;
                 })
@@ -2264,7 +1990,6 @@ if ($is_print) {
         }
 
         function saveNotulensi() {
-            // Validasi Nama Kegiatan
             const form = document.getElementById('notulenForm');
             const namaKegiatan = form.querySelector('[name="nama_kegiatan"]').value.trim();
 
@@ -2289,18 +2014,15 @@ if ($is_print) {
                 })
                 .then(r => r.text())
                 .then(res => {
-                    // Bersihkan response dari karakter non-digit
                     let cleanId = res.replace(/\D/g, '');
                     let idValid = parseInt(cleanId);
 
                     if (!isNaN(idValid) && idValid > 0) {
                         showNotif();
-                        // Update ID di form jika data baru, supaya save berikutnya jadi UPDATE
                         const form = document.getElementById('notulenForm');
                         const inputId = form.querySelector('[name="id_undangan"]');
                         if (inputId && inputId.value == 0) inputId.value = idValid;
                     } else {
-                        // Fallback jika response bukan angka
                         if (res.trim() === 'OK') showNotif();
                         else Swal.fire({
                             icon: 'error',

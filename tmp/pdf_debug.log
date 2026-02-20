@@ -19,3 +19,35 @@ Found PDFs: Array
 
 Checking: C:\xampp\htdocs\RAPAT_BPS\pdf/../uploads/absensi/absensi_6996b6d12d937.pdf
 Merging uploads/absensi/absensi_6996b6d12d937.pdf (1 pages)
+Found PDFs: Array
+(
+    [0] => uploads/absensi/absensi_6997cf22c58a1.pdf
+)
+
+Checking: C:\xampp\htdocs\RAPAT_BPS\pdf/../uploads/absensi/absensi_6997cf22c58a1.pdf
+Trying Ghostscript fallback for uploads/absensi/absensi_6997cf22c58a1.pdf...
+GS Fallback success. Merging (1 pages)
+Found PDFs: Array
+(
+    [0] => uploads/absensi/absensi_6997d0a829ef3.pdf
+)
+
+Checking: C:\xampp\htdocs\RAPAT_BPS\pdf/../uploads/absensi/absensi_6997d0a829ef3.pdf
+Trying Ghostscript fallback for uploads/absensi/absensi_6997d0a829ef3.pdf...
+GS Fallback success. Merging (1 pages)
+Found PDFs: Array
+(
+    [0] => uploads/absensi/absensi_6997cf22c58a1.pdf
+)
+
+Checking: C:\xampp\htdocs\RAPAT_BPS\pdf/../uploads/absensi/absensi_6997cf22c58a1.pdf
+Trying Ghostscript fallback for uploads/absensi/absensi_6997cf22c58a1.pdf...
+GS Fallback success. Merging (1 pages)
+Found PDFs: Array
+(
+    [0] => uploads/absensi/absensi_69981649eb840.pdf
+)
+
+Checking: C:\xampp\htdocs\RAPAT_BPS\pdf/../uploads/absensi/absensi_69981649eb840.pdf
+Trying Ghostscript fallback for uploads/absensi/absensi_69981649eb840.pdf...
+GS Fallback success. Merging (1 pages)

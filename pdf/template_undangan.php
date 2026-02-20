@@ -1,35 +1,27 @@
 <?php
-// 1. AMBIL DATA DARI SESSION
-// Kita ambil data yang dikirim dari form input (lewat generate_undangan.php)
 $d = $_SESSION['undangan'] ?? [];
 
-// Mapping variabel agar sesuai dengan HTML kamu
+$nama_pimpinan = "Agus Marzuki Prihantoro"; // ===== NAMA TANDA TANGAN =====
 $nomor      = $d['nomor'] ?? '[Nomor Surat]';
 $sifat      = $d['sifat'] ?? 'Biasa';
 $lampiran   = $_POST['f_lampiran'] ?? '-';
 $hal        = $d['hal'] ?? 'Undangan Rapat';
-$tglsurat   = $d['tanggal'] ?? date('Y-m-d'); // Tanggal pembuatan surat
-$kepada     = $d['kepada'] ?? 'Bapak/Ibu Terlampir';
-$isi      = $d['isi'] ?? ($_POST['f_isi'] ?? 'Sehubungan dengan menjelang akan berakhirnya tahun anggaran 2025, Kepala BPS Kota Depok mengundang seluruh Ketua Tim dan PPK BPS Kota Depok untuk hadir dalam rapat yang akan diselenggarakan pada');
-
-// [BARU] Pastikan diakhiri dengan titik dua ( : ) sesuai request
-$isi = trim($isi);
+$tglsurat   = $d['tanggal'] ?? date('Y-m-d');
+$kepada     = $d['kepada'];
+$isi        = $d['isi'] ?? ($_POST['f_isi']);
+$isi        = trim($isi);
 if (substr($isi, -1) === '.') {
-    $isi = substr($isi, 0, -1); // Hapus titik di akhir jika ada
+    $isi = substr($isi, 0, -1);
 }
 if (substr($isi, -1) !== ':') {
     $isi .= ' :';
 }
-// Data Acara
 $hari       = $d['tanggal_acara'] ?? date('Y-m-d');
 $waktu      = ($d['pukul_mulai'] ?? '09:00') . ' - ' . ($d['pukul_selesai'] ?? 'Selesai');
 $tempat     = $d['tempat'] ?? '-';
 $agenda     = $d['agenda'] ?? '-';
+$nama_ttd   = $d['pimpinan'] ?? 'Agus Marzuki Prihantoro';
 
-// Tanda Tangan
-$nama_ttd   = $d['pimpinan'] ?? 'Agus Marzuki Prihantoro'; // Default jika kosong
-
-// 2. HELPER FUNCTIONS (Format Tanggal Indonesia)
 if (!function_exists('formatTanggal')) {
     function formatTanggal($date)
     {
@@ -49,7 +41,6 @@ if (!function_exists('formatHariTanggal')) {
     }
 }
 
-// Helper sederhana untuk waktu (jika diperlukan format khusus)
 if (!function_exists('formatWaktu')) {
     function formatWaktu($waktu)
     {
@@ -65,22 +56,18 @@ if (!function_exists('formatWaktu')) {
     <meta charset="utf-8">
     <title>Cetak Undangan</title>
     <style>
-        /* Reset default browser margin agar PDF rapi */
         body {
             margin: 0;
             padding: 0;
             font-family: Arial;
         }
 
-        /* Style Utama (Diadaptasi dari kode Preview kamu) */
         .sheet {
-            /* Kita hapus width/shadow karena ini PDF, bukan layar */
             background: white;
             box-sizing: border-box;
             font-size: 11pt;
         }
 
-        /* KOP SURAT (Menggunakan Tabel untuk pengganti Flexbox agar aman di PDF) */
         table.kop-layout {
             width: 100%;
             border-bottom: 3px solid #000;
@@ -103,7 +90,6 @@ if (!function_exists('formatWaktu')) {
             font-size: 16pt;
             font-weight: bold;
             font-style: italic;
-            /* Tulisan Miring */
             letter-spacing: 0.5px;
         }
 
@@ -111,7 +97,6 @@ if (!function_exists('formatWaktu')) {
             font-size: 14pt;
             font-weight: bold;
             font-style: italic;
-            /* Tulisan Miring */
             margin-top: 2px;
             margin-bottom: 8px;
         }
@@ -120,11 +105,9 @@ if (!function_exists('formatWaktu')) {
             font-size: 8pt;
             font-weight: normal;
             font-style: normal;
-            /* Tulisan Tegak */
             line-height: 1.4;
         }
 
-        /* META DATA (Nomor, Sifat, Tanggal) */
         table.meta-layout {
             width: 100%;
             margin-bottom: 20px;
@@ -148,14 +131,12 @@ if (!function_exists('formatWaktu')) {
             vertical-align: top;
         }
 
-        /* CONTENT */
         .content {
             font-size: 11pt;
             line-height: 1.5;
             text-align: justify;
         }
 
-        /* DETAIL TABLE (Jadwal) */
         .detail-table {
             margin: 15px 0 15px 30px;
             width: 90%;
@@ -167,17 +148,14 @@ if (!function_exists('formatWaktu')) {
             vertical-align: top;
         }
 
-        /* TANDA TANGAN */
-        /* Menggunakan float di mPDF kadang tricky, kita gunakan container khusus */
         .ttd-container {
             width: 100%;
             text-align: right;
-            /* Geser konten ke kanan */
             margin-top: 50px;
         }
 
         .ttd-box {
-            display: inline-block;
+            display: block;
             width: 250px;
             text-align: center;
             float: right;
@@ -186,13 +164,15 @@ if (!function_exists('formatWaktu')) {
 </head>
 
 <body>
-
+    <!----- TAMPILAN TEMPLATE CETAK UNDANGAN ----->
     <div class="sheet">
         <table class="kop-layout" style="padding-bottom: 0px;">
             <tr>
+                <!-- GAMBAR LOGO BPS -->
                 <td class="kop-logo">
                     <img src="logo.png" alt="Logo BPS" style="width: 120px; height: auto; margin-right: 0px;">
                 </td>
+                <!-- KOP SURAT UNDANGAN -->
                 <td class="kop-text">
                     <div class="instansi-name">BADAN PUSAT STATISTIK</div>
                     <div class="wilayah-name">KOTA DEPOK</div>
@@ -214,7 +194,6 @@ if (!function_exists('formatWaktu')) {
                             <td width="15">:</td>
                             <td><?= htmlspecialchars($nomor) ?></td>
                         </tr>
-
 
                         <tr>
                             <td>Sifat</td>
@@ -250,11 +229,8 @@ if (!function_exists('formatWaktu')) {
                     <td style="vertical-align: top;">
                         <table style="width: 100%; border-collapse: collapse; border: none;">
                             <?php
-                            // 1. Ganti literal '\r\n', '\n', '\r' (teks, bukan newline asli) menjadi newline asli
                             $kepada_clean = preg_replace('/\\\\r\\\\n|\\\\n|\\\\r/', "\n", $kepada);
-                            // 2. Normalisasi newline asli (\r\n atau \r) menjadi \n
                             $kepada_clean = str_replace(array("\r\n", "\r"), "\n", $kepada_clean);
-                            // 3. Pecah berdasarkan \n
                             $daftar_penerima = explode("\n", $kepada_clean);
                             foreach ($daftar_penerima as $penerima) {
                                 $posisi_titik = strpos($penerima, ".");
@@ -310,14 +286,14 @@ if (!function_exists('formatWaktu')) {
 
         </table>
 
+        <!-- PARAGRAF PENUTUP UNDANGAN-->
         <p style="text-indent: 50px; text-align: justify; margin-top: 20px;">
-            Demikian undangan ini disampaikan, atas kehadiran dan perhatiannya diucapkan terima kasih.
+            demikian undangan ini disampaikan, atas kehadiran dan perhatiannya diucapkan terima kasih.
         </p>
 
         <?php
-        // 1. Ambil gambar dan ubah ke Base64 (Langkah ini wajib agar gambar tidak hilang)
         $ttd_file = $pejabat['file_stempel_ttd'] ?? 'ttd1.png';
-        $path = __DIR__ . '/' . $ttd_file; // Pastikan file gambar ada di folder yang sama (folder pdf)
+        $path = __DIR__ . '/' . $ttd_file;
 
         $base64 = '';
         if (file_exists($path)) {
@@ -332,6 +308,7 @@ if (!function_exists('formatWaktu')) {
                 <td style="width: 60%;"></td>
                 <td style="width: 40%; text-align: center; vertical-align: top;">
 
+                    <!-- TANDA TANGAN -->
                     <p style="margin: 0; padding: 0; line-height: 1.2;">Kepala Badan Pusat Statistik</p>
                     <p style="margin: 0; padding: 0; line-height: 1.2;">Kota Depok,</p>
 
@@ -346,15 +323,13 @@ if (!function_exists('formatWaktu')) {
                     <div style="height: 20px;"></div>
 
                     <p style="margin: 0; padding: 0; position: relative; z-index: 2;">
-                        <strong><?= htmlspecialchars($pejabat['nama_kepala'] ?? 'Agus Marzuki Prihantoro') ?></strong>
+                        <strong><?= htmlspecialchars($nama_pimpinan ?? $pejabat['nama_kepala']) ?></strong>
                     </p>
                 </td>
             </tr>
         </table>
     </div>
-
     </div>
-
 </body>
 
 </html>

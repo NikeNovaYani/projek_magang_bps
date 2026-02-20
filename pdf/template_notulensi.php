@@ -1,7 +1,5 @@
 <?php
 $data = $data ?? [];
-
-/* ================= UTIL ================= */
 $bulan_indonesia = [
     'January' => 'Januari',
     'February' => 'Februari',
@@ -26,26 +24,20 @@ if (!function_exists('formatTanggalIndo')) {
     }
 }
 
-/* ================= AGENDA ================= */
+/* ========= TAMPILAN TEMPLATE AGENDA NOTULENSI ======== */
 $data['agenda'] = '
 <span class="checkmark">&#10003;</span> Pembukaan<br>
 <span class="checkmark">&#10003;</span> Pembahasan dan Diskusi<br>
 <span class="checkmark">&#10003;</span> Kesimpulan / Tindak Lanjut
 ';
 
-/* ================= ISI RESUME (WAJIB MASUK SINI) ================= */
-/* ================= ISI RESUME (WAJIB MASUK SINI) ================= */
-// Helper to force inline style for PDF compatibility
 function fixIndent($html)
 {
     if (!$html) return '';
-    // Replace class="... first-line-indent ..." with hard spaces
-    // CSS text-indent is unreliable in some PDF engines in this context
     return preg_replace_callback(
         '/<p([^>]*class=["\'][^"\']*first-line-indent[^"\']*["\'][^>]*)>/i',
         function ($matches) {
             $tag = $matches[0];
-            // Inject 10 non-breaking spaces for visual indentation
             return $tag . str_repeat('&nbsp;', 10);
         },
         $html
@@ -365,9 +357,18 @@ $p_notulis = $data['p_notulis'] ?? 'Nurine Kristy';
                 <?php
                 $fullPath = __DIR__ . '/../' . $docPath;
                 if (file_exists($fullPath)):
+                    // Fix windows path backslashes for CSS url()
+                    $bgPath = str_replace('\\', '/', $fullPath);
                 ?>
-                    <div style="margin-bottom: 30px;">
-                        <img src="<?= $fullPath ?>" style="max-width: 100%; max-height: 100mm;">
+                    <!-- Standardized Image Container (160mm x 90mm) -->
+                    <div style="margin: 0 auto 30px auto;
+                                width: 160mm;
+                                height: 90mm;
+                                background-image: url('<?= $bgPath ?>');
+                                background-size: cover;
+                                background-repeat: no-repeat;
+                                background-position: center;
+                                border: 1px solid #ccc;">
                     </div>
                 <?php endif; ?>
             <?php endforeach; ?>

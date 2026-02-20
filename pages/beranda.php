@@ -1,15 +1,10 @@
 <?php
-// Mencegah akses langsung ke file ini
 if (basename($_SERVER['PHP_SELF']) === basename(__FILE__)) {
   header("Location: ../index.php?page=beranda");
   exit();
 }
 ?>
 <style>
-  /* ===== LOCAL STYLES FOR BERANDA CONTENT only ===== */
-  /* Scoped styles where possible, or just overrides */
-
-  /* Header & Features Styles from original file */
   .header {
     text-align: center;
     margin-bottom: 50px;
@@ -46,7 +41,6 @@ if (basename($_SERVER['PHP_SELF']) === basename(__FILE__)) {
     margin-right: auto;
   }
 
-  /* ===== FEATURES ===== */
   .features {
     display: flex;
     gap: 25px;
@@ -55,7 +49,6 @@ if (basename($_SERVER['PHP_SELF']) === basename(__FILE__)) {
     margin-top: 40px;
   }
 
-  /* ===== CARD ===== */
   .feature {
     flex: 1;
     min-width: 230px;
@@ -118,7 +111,6 @@ if (basename($_SERVER['PHP_SELF']) === basename(__FILE__)) {
     line-height: 1.5;
   }
 
-  /* ===== BUTTON ===== */
   .feature a {
     display: inline-block;
     padding: 12px 24px;
@@ -139,7 +131,6 @@ if (basename($_SERVER['PHP_SELF']) === basename(__FILE__)) {
     box-shadow: 0 5px 15px rgba(13, 71, 161, 0.3);
   }
 
-  /* ===== WELCOME ANIMATION ===== */
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -169,7 +160,6 @@ if (basename($_SERVER['PHP_SELF']) === basename(__FILE__)) {
     animation-delay: 0.3s;
   }
 
-  /* Responsive adjustments */
   @media (max-width:768px) {
     .features {
       justify-content: space-around;
@@ -192,7 +182,6 @@ if (basename($_SERVER['PHP_SELF']) === basename(__FILE__)) {
     }
   }
 
-  /* ===== CTA HERO SECTION ===== */
   .cta-hero {
     background: linear-gradient(135deg, #1976d2, #42a5f5);
     border-radius: 15px;
@@ -207,7 +196,6 @@ if (basename($_SERVER['PHP_SELF']) === basename(__FILE__)) {
     overflow: hidden;
   }
 
-  /* Decorative circle */
   .cta-hero::before {
     content: '';
     position: absolute;
@@ -283,13 +271,12 @@ if (basename($_SERVER['PHP_SELF']) === basename(__FILE__)) {
   }
 </style>
 
-<!-- HEADER -->
+<!-- TAMPILAN TEKS ATAS SELAMAT DATANG -->
 <div class="header">
   <h1>Selamat Datang di <span style="font-style: italic; font-weight: 700; color: #1976d2;">SI UANG</span></h1>
-  <p>Sistem Informasi <b>Undangan, Absensi, Notulensi, dan Gudang Rapat</b>.</p>
+  <p> <b>Undangan, Absensi, Notulensi, dan Gudang Rapat</b>.</p>
 </div>
 
-<!-- CTA HERO SECTION -->
 <div class="cta-hero">
   <div class="cta-content">
     <h2>Mulai Rapat Baru</h2>
@@ -303,7 +290,6 @@ if (basename($_SERVER['PHP_SELF']) === basename(__FILE__)) {
   </div>
 </div>
 
-<!-- FEATURES -->
 <div class="features">
 
   <div class="feature">
